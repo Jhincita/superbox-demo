@@ -6,7 +6,7 @@ import {CartSummary} from './CartSummary';
 /**
  * Returns a map of all line items and their children.
  * @param {CartLine[]} lines
- * @return {import("C:/Users/jhinc/WebstormProjects/super-box/app/components/CartMain").LineItemChildrenMap}
+ * @return {LineItemChildrenMap}
  */
 function getLineItemChildrenMap(lines) {
   const children = {};
@@ -36,69 +36,57 @@ export function CartMain({layout, cart: originalCart}) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
 
-  const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
+  const lines = cart?.lines?.nodes ?? [];
   const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
-  const childrenMap = getLineItemChildrenMap(cart?.lines?.nodes ?? []);
+  const childrenMap = getLineItemChildrenMap(lines);
 
   return (
     <section
-      className={className}
-      aria-label={layout === 'page' ? 'Cart page' : 'Cart drawer'}
+      className="cart-main"
+      aria-label={layout === 'page' ? 'Carrito' : 'Carrito lateral'}
     >
-      <CartEmpty hidden={linesCount} layout={layout} />
-      <div className="cart-details">
+      <div className="cart-lines">
+        {!lines.length && <CartEmpty layout={layout} />}
         <p id="cart-lines" className="sr-only">
-          Line items
+          Productos en el carrito
         </p>
-        <div>
-          <ul aria-labelledby="cart-lines">
-            {(cart?.lines?.nodes ?? []).map((line) => {
-              // we do not render non-parent lines at the root of the cart
-              if (
-                'parentRelationship' in line &&
-                line.parentRelationship?.parent
-              ) {
-                return null;
-              }
-              return (
-                <CartLineItem
-                  key={line.id}
-                  line={line}
-                  layout={layout}
-                  childrenMap={childrenMap}
-                />
-              );
-            })}
-          </ul>
-        </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+        <ul aria-labelledby="cart-lines">
+          {lines.map((line) => {
+            // we do not render non-parent lines at the root of the cart
+            if ('parentRelationship' in line && line.parentRelationship?.parent) {
+              return null;
+            }
+            return (
+              <CartLineItem
+                key={line.id}
+                line={line}
+                layout={layout}
+                childrenMap={childrenMap}
+              />
+            );
+          })}
+        </ul>
       </div>
+      {cartHasItems && <CartSummary cart={cart} layout={layout} />}
     </section>
   );
 }
 
 /**
- * @param {{
- *   hidden: boolean;
- *   layout?: CartMainProps['layout'];
- * }}
+ * @param {{layout?: CartMainProps['layout']}}
  */
-function CartEmpty({hidden = false}) {
+function CartEmpty({layout}) {
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
-      </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
+    <div className="cart-empty">
+      <h3>Tu carrito está vacío.</h3>
+      <Link
+        className="btn btn-primary"
+        onClick={layout === 'aside' ? close : undefined}
+        prefetch="viewport"
+        to="/collections/all"
+      >
+        Seguir comprando
       </Link>
     </div>
   );

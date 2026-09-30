@@ -216,6 +216,7 @@ export const HEADER_QUERY = `#graphql
   query Header(
     $country: CountryCode
     $headerMenuHandle: String!
+    $categoryMenuHandle: String!
     $language: LanguageCode
   ) @inContext(language: $language, country: $country) {
     shop {
@@ -224,8 +225,58 @@ export const HEADER_QUERY = `#graphql
     menu(handle: $headerMenuHandle) {
       ...Menu
     }
+    categoryMenu: menu(handle: $categoryMenuHandle) {
+      ...Menu
+    }
+    collections(first: 20, sortKey: TITLE) {
+      nodes {
+        id
+        handle
+        title
+      }
+    }
   }
   ${MENU_FRAGMENT}
+`;
+
+/**
+ * Fields needed by <ProductItem> (the design's product card), shared by
+ * the home page, catalog, collection and search queries.
+ */
+export const PRODUCT_CARD_FRAGMENT = `#graphql
+  fragment ProductCard on Product {
+    id
+    handle
+    title
+    vendor
+    productType
+    availableForSale
+    featuredImage {
+      id
+      altText
+      url
+      width
+      height
+    }
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    compareAtPriceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    variants(first: 2) {
+      nodes {
+        id
+        availableForSale
+      }
+    }
+  }
 `;
 
 export const FOOTER_QUERY = `#graphql

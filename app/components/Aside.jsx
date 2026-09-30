@@ -1,5 +1,6 @@
 import {createContext, useContext, useEffect, useState} from 'react';
 import {useId} from 'react';
+import {Icon} from '~/components/Icon';
 
 /**
  * A side bar component with Overlay
@@ -39,20 +40,30 @@ export function Aside({children, heading, type}) {
 
   return (
     <div
-      aria-modal
+      aria-hidden={!expanded}
       className={`overlay ${expanded ? 'expanded' : ''}`}
-      role="dialog"
-      aria-labelledby={id}
+      inert={!expanded ? '' : undefined}
     >
-      <button className="close-outside" onClick={close} />
-      <aside>
-        <header>
-          <h3 id={id}>{heading}</h3>
-          <button className="close reset" onClick={close} aria-label="Close">
-            &times;
+      <button
+        aria-label="Cerrar"
+        className="close-outside"
+        onClick={close}
+        tabIndex={-1}
+        type="button"
+      />
+      <aside aria-labelledby={id} aria-modal role="dialog">
+        <div className="aside-head">
+          <h4 id={id}>{heading}</h4>
+          <button
+            aria-label="Cerrar"
+            className="icon-btn sm"
+            onClick={close}
+            type="button"
+          >
+            <Icon name="close" size={20} strokeWidth={2} />
           </button>
-        </header>
-        <main>{children}</main>
+        </div>
+        <div className="aside-body">{children}</div>
       </aside>
     </div>
   );
@@ -84,7 +95,7 @@ export function useAside() {
   return aside;
 }
 
-/** @typedef {'search' | 'cart' | 'mobile' | 'closed'} AsideType */
+/** @typedef {'cart' | 'closed'} AsideType */
 /**
  * @typedef {{
  *   type: AsideType;

@@ -7,7 +7,7 @@ import {redirectIfHandleIsLocalized} from '~/lib/redirect';
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.blog.title ?? ''} blog`}];
+  return [{title: `Superbox | ${data?.blog.title ?? ''} blog`}];
 };
 
 /**
@@ -72,7 +72,7 @@ export default function Blog() {
   const {articles} = blog;
 
   return (
-    <div className="blog">
+    <div className="container content-page blog">
       <h1>{blog.title}</h1>
       <div className="blog-grid">
         <PaginatedResourceSection connection={articles}>

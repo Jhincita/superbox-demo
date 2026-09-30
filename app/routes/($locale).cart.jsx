@@ -6,7 +6,7 @@ import {CartMain} from '~/components/CartMain';
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return [{title: `Superbox | Carrito`}];
 };
 
 /**
@@ -112,8 +112,8 @@ export default function Cart() {
   const cart = useLoaderData();
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
+    <div className="container cart-page">
+      <h1>Tu carrito</h1>
       <CartMain layout="page" cart={cart} />
     </div>
   );
