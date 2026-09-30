@@ -15,6 +15,8 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
+import {CATEGORY_MENU_HANDLE} from '~/lib/storeConfig';
+import {THEME_STORAGE_KEY} from '~/components/ThemeToggle';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -103,6 +105,7 @@ async function loadCriticalData({context}) {
       cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'main-menu', // Adjust to your header menu handle
+        categoryMenuHandle: CATEGORY_MENU_HANDLE,
       },
     }),
     // Add other queries here, so that they are loaded in parallel
@@ -147,10 +150,20 @@ export function Layout({children}) {
   const nonce = useNonce();
 
   return (
-    <html lang="en">
+    // data-theme is set before paint by the inline script below, so the
+    // server-rendered attribute can legitimately differ from the client's.
+    <html lang="es" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <script
+          nonce={nonce}
+          // Browsers hide nonce values from the DOM after load.
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
         <link rel="stylesheet" href={tailwindCss}></link>
         <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
@@ -201,7 +214,7 @@ export function ErrorBoundary() {
 
   return (
     <div className="route-error">
-      <h1>Oops</h1>
+      <h1>{errorStatus === 404 ? 'Página no encontrada' : 'Algo salió mal'}</h1>
       <h2>{errorStatus}</h2>
       {errorMessage && (
         <fieldset>

@@ -1,122 +1,136 @@
-import {Suspense} from 'react';
-import {Await, NavLink} from 'react-router';
+import {Suspense, useEffect, useRef} from 'react';
+import {Await, Link, useFetcher} from 'react-router';
+import {toRelativeUrl} from '~/components/Header';
+import {getCategories} from '~/lib/categories';
+import {STORE} from '~/lib/storeConfig';
 
 /**
  * @param {FooterProps}
  */
 export function Footer({footer: footerPromise, header, publicStoreDomain}) {
+  const categories = getCategories(header);
+  const primaryDomainUrl = header?.shop.primaryDomain?.url;
+  const year = new Date().getFullYear();
+
   return (
-    <Suspense>
-      <Await resolve={footerPromise}>
-        {(footer) => (
-          <footer className="footer">
-            {footer?.menu && header.shop.primaryDomain?.url && (
-              <FooterMenu
-                menu={footer.menu}
-                primaryDomainUrl={header.shop.primaryDomain.url}
-                publicStoreDomain={publicStoreDomain}
-              />
-            )}
-          </footer>
-        )}
-      </Await>
-    </Suspense>
+    <>
+      <Newsletter />
+      <footer className="footer">
+        <div className="container footer-grid">
+          <div className="footer-about">
+            <span className="brand-name">{STORE.name}</span>
+            <p>{STORE.about}</p>
+          </div>
+          <nav className="footer-col" aria-label="Catálogo">
+            <h6>Catálogo</h6>
+            {categories.map((c) => (
+              <Link key={c.id} prefetch="intent" to={`/collections/${c.handle}`}>
+                {c.title}
+              </Link>
+            ))}
+            <Link prefetch="intent" to="/collections/all">
+              Todos los productos
+            </Link>
+          </nav>
+          <nav className="footer-col" aria-label="Ayuda">
+            <h6>Ayuda</h6>
+            <Link prefetch="intent" to={STORE.contactPath}>
+              Contacto
+            </Link>
+            <a href={STORE.supportUrl} rel="noopener noreferrer" target="_blank">
+              Soporte técnico
+            </a>
+            <a href={STORE.whatsappUrl} rel="noopener noreferrer" target="_blank">
+              WhatsApp
+            </a>
+            <Suspense>
+              <Await resolve={footerPromise}>
+                {(footer) =>
+                  (footer?.menu?.items ?? []).map((item) => {
+                    const url = toRelativeUrl(
+                      item.url,
+                      primaryDomainUrl,
+                      publicStoreDomain,
+                    );
+                    if (!url) return null;
+                    return url.startsWith('/') ? (
+                      <Link key={item.id} prefetch="intent" to={url}>
+                        {item.title}
+                      </Link>
+                    ) : (
+                      <a
+                        href={url}
+                        key={item.id}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {item.title}
+                      </a>
+                    );
+                  })
+                }
+              </Await>
+            </Suspense>
+          </nav>
+        </div>
+        <div className="container footer-bottom">
+          <span>
+            © {year} Superbox · {STORE.location}
+          </span>
+          <span>Precios en CLP, impuesto incluido</span>
+        </div>
+      </footer>
+    </>
   );
 }
 
-/**
- * @param {{
- *   menu: FooterQuery['menu'];
- *   primaryDomainUrl: FooterProps['header']['shop']['primaryDomain']['url'];
- *   publicStoreDomain: string;
- * }}
- */
-function FooterMenu({menu, primaryDomainUrl, publicStoreDomain}) {
+function Newsletter() {
+  /** @type {import('react-router').FetcherWithComponents<import('~/routes/($locale).newsletter').ActionResponse>} */
+  const fetcher = useFetcher({key: 'newsletter'});
+  const formRef = useRef(null);
+  const ok = fetcher.data?.ok;
+
+  useEffect(() => {
+    if (ok) formRef.current?.reset();
+  }, [ok]);
+
+  const message =
+    fetcher.state !== 'idle'
+      ? 'Enviando…'
+      : fetcher.data?.ok
+        ? 'Listo. Te avisaremos de las próximas ofertas.'
+        : fetcher.data?.error ?? '';
+
   return (
-    <nav className="footer-menu" role="navigation">
-      {(menu || FALLBACK_FOOTER_MENU).items.map((item) => {
-        if (!item.url) return null;
-        // if the url is internal, we strip the domain
-        const url =
-          item.url.includes('myshopify.com') ||
-          item.url.includes(publicStoreDomain) ||
-          item.url.includes(primaryDomainUrl)
-            ? new URL(item.url).pathname
-            : item.url;
-        const isExternal = !url.startsWith('/');
-        return isExternal ? (
-          <a href={url} key={item.id} rel="noopener noreferrer" target="_blank">
-            {item.title}
-          </a>
-        ) : (
-          <NavLink
-            end
-            key={item.id}
-            prefetch="intent"
-            style={activeLinkStyle}
-            to={url}
-          >
-            {item.title}
-          </NavLink>
-        );
-      })}
-    </nav>
+    <section className="newsletter">
+      <div className="container newsletter-inner">
+        <div>
+          <h2>Las ofertas, primero para ti.</h2>
+          <p>
+            Suscríbete y mantente informado de todas nuestras ofertas y nuevos
+            equipos.
+          </p>
+        </div>
+        <fetcher.Form method="post" action="/newsletter" ref={formRef}>
+          <div className="newsletter-field">
+            <input
+              aria-label="Correo electrónico"
+              name="email"
+              placeholder="Tu correo electrónico"
+              required
+              type="email"
+            />
+            <button type="submit" disabled={fetcher.state !== 'idle'}>
+              Suscribirme
+            </button>
+          </div>
+          <span className="newsletter-msg" role="status">
+            {message}
+          </span>
+        </fetcher.Form>
+      </div>
+    </section>
   );
-}
-
-const FALLBACK_FOOTER_MENU = {
-  id: 'gid://shopify/Menu/199655620664',
-  items: [
-    {
-      id: 'gid://shopify/MenuItem/461633060920',
-      resourceId: 'gid://shopify/ShopPolicy/23358046264',
-      tags: [],
-      title: 'Privacy Policy',
-      type: 'SHOP_POLICY',
-      url: '/policies/privacy-policy',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461633093688',
-      resourceId: 'gid://shopify/ShopPolicy/23358013496',
-      tags: [],
-      title: 'Refund Policy',
-      type: 'SHOP_POLICY',
-      url: '/policies/refund-policy',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461633126456',
-      resourceId: 'gid://shopify/ShopPolicy/23358111800',
-      tags: [],
-      title: 'Shipping Policy',
-      type: 'SHOP_POLICY',
-      url: '/policies/shipping-policy',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461633159224',
-      resourceId: 'gid://shopify/ShopPolicy/23358079032',
-      tags: [],
-      title: 'Terms of Service',
-      type: 'SHOP_POLICY',
-      url: '/policies/terms-of-service',
-      items: [],
-    },
-  ],
-};
-
-/**
- * @param {{
- *   isActive: boolean;
- *   isPending: boolean;
- * }}
- */
-function activeLinkStyle({isActive, isPending}) {
-  return {
-    fontWeight: isActive ? 'bold' : undefined,
-    color: isPending ? 'grey' : 'white',
-  };
 }
 
 /**

@@ -43,3 +43,18 @@ npm run dev
 ## Setup for using Customer Account API (`/account` section)
 
 Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
+
+## Superbox design
+
+The storefront UI is a port of the "Superbox Store" Claude Design file
+(Modernist design system, orange accent, Archivo type, light/dark theme).
+
+- Tokens and component styles: `app/styles/app.css`
+- Store copy, contact details, hero, value props and design toggles
+  (grayscale photos, compact grid): `app/lib/storeConfig.js`
+- Category navigation reads the Shopify menu with handle `categorias`
+  (collection links). Without that menu, all collections are listed.
+- The hero features the product set in `HERO.productHandle`, falling back
+  to the best seller.
+- Catalog filters (availability, max price, sort) live in the URL:
+  `?stock=en-existencia&max=100000&orden=asc`.

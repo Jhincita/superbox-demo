@@ -50,7 +50,7 @@ export default function Collections() {
   const {collections} = useLoaderData();
 
   return (
-    <div className="collections">
+    <div className="container content-page collections">
       <h1>Collections</h1>
       <PaginatedResourceSection
         connection={collections}

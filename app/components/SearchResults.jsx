@@ -1,5 +1,6 @@
 import {Link} from 'react-router';
-import {Image, Money, Pagination} from '@shopify/hydrogen';
+import {Pagination} from '@shopify/hydrogen';
+import {ProductItem} from '~/components/ProductItem';
 import {urlWithTrackingParams} from '~/lib/search';
 
 /**
@@ -28,7 +29,7 @@ function SearchResultsArticles({term, articles}) {
 
   return (
     <div className="search-result">
-      <h2>Articles</h2>
+      <h2>Artículos</h2>
       <div>
         {articles?.nodes?.map((article) => {
           const articleUrl = urlWithTrackingParams({
@@ -61,7 +62,7 @@ function SearchResultsPages({term, pages}) {
 
   return (
     <div className="search-result">
-      <h2>Pages</h2>
+      <h2>Páginas</h2>
       <div>
         {pages?.nodes?.map((page) => {
           const pageUrl = urlWithTrackingParams({
@@ -94,61 +95,50 @@ function SearchResultsProducts({term, products}) {
 
   return (
     <div className="search-result">
-      <h2>Products</h2>
+      <h2>Productos</h2>
       <Pagination connection={products}>
-        {({nodes, isLoading, NextLink, PreviousLink}) => {
-          const ItemsMarkup = nodes.map((product) => {
-            const productUrl = urlWithTrackingParams({
-              baseUrl: `/products/${product.handle}`,
-              trackingParams: product.trackingParameters,
-              term,
-            });
-
-            const price = product?.selectedOrFirstAvailableVariant?.price;
-            const image = product?.selectedOrFirstAvailableVariant?.image;
-
-            return (
-              <div className="search-results-item" key={product.id}>
-                <Link prefetch="intent" to={productUrl}>
-                  {image && (
-                    <Image data={image} alt={product.title} width={50} />
-                  )}
-                  <div>
-                    <p>{product.title}</p>
-                    <small>{price && <Money data={price} />}</small>
-                  </div>
-                </Link>
-              </div>
-            );
-          });
-
-          return (
-            <div>
-              <div>
-                <PreviousLink>
-                  {isLoading ? 'Loading...' : <span>↑ Load previous</span>}
-                </PreviousLink>
-              </div>
-              <div>
-                {ItemsMarkup}
-                <br />
-              </div>
-              <div>
-                <NextLink>
-                  {isLoading ? 'Loading...' : <span>Load more ↓</span>}
-                </NextLink>
-              </div>
+        {({nodes, isLoading, NextLink, PreviousLink}) => (
+          <div>
+            <div className="pagination-link">
+              <PreviousLink className="btn btn-secondary">
+                {isLoading ? 'Cargando…' : 'Ver anteriores'}
+              </PreviousLink>
             </div>
-          );
-        }}
+            <div className="product-grid">
+              {nodes.map((product) => (
+                <ProductItem
+                  key={product.id}
+                  product={product}
+                  to={urlWithTrackingParams({
+                    baseUrl: `/products/${product.handle}`,
+                    trackingParams: product.trackingParameters,
+                    term,
+                  })}
+                />
+              ))}
+            </div>
+            <div className="pagination-link">
+              <NextLink className="btn btn-secondary">
+                {isLoading ? 'Cargando…' : 'Cargar más productos'}
+              </NextLink>
+            </div>
+          </div>
+        )}
       </Pagination>
-      <br />
     </div>
   );
 }
 
 function SearchResultsEmpty() {
-  return <p>No results, try a different search.</p>;
+  return (
+    <div className="empty-state">
+      <h3>No encontramos resultados.</h3>
+      <p>
+        Prueba con otra búsqueda o escríbenos: conseguimos el equipo que
+        necesitas.
+      </p>
+    </div>
+  );
 }
 
 /** @typedef {RegularSearchReturn['result']['items']} SearchItems */

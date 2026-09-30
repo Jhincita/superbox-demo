@@ -1,4 +1,5 @@
 import {Image} from '@shopify/hydrogen';
+import {DESIGN} from '~/lib/storeConfig';
 
 /**
  * @param {{
@@ -6,18 +7,19 @@ import {Image} from '@shopify/hydrogen';
  * }}
  */
 export function ProductImage({image}) {
-  if (!image) {
-    return <div className="product-image" />;
-  }
   return (
-    <div className="product-image">
-      <Image
-        alt={image.altText || 'Product Image'}
-        aspectRatio="1/1"
-        data={image}
-        key={image.id}
-        sizes="(min-width: 45em) 50vw, 100vw"
-      />
+    <div className="product-media">
+      {image ? (
+        <Image
+          alt={image.altText || 'Imagen del producto'}
+          aspectRatio="1/1"
+          className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
+          data={image}
+          key={image.id}
+          loading="eager"
+          sizes="(min-width: 64em) 600px, 100vw"
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import {useLoaderData} from 'react-router';
+import {Link, useLoaderData} from 'react-router';
 import {
   getSelectedProductOptions,
   Analytics,
@@ -11,13 +11,15 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {PRODUCT_PERKS} from '~/lib/storeConfig';
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `Superbox | ${data?.product.title ?? ''}`},
+    {name: 'description', content: data?.product.seo?.description ?? data?.product.description ?? ''},
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,
@@ -103,30 +105,51 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml} = product;
+  const {title, descriptionHtml, vendor, productType} = product;
+  const image = selectedVariant?.image ?? product.featuredImage;
+  const available = Boolean(selectedVariant?.availableForSale);
+  const kicker = [vendor, productType].filter(Boolean).join(' · ');
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+    <div className="container product-page">
+      <nav className="breadcrumb" aria-label="Ruta de navegación">
+        <Link to="/">Inicio</Link>
+        <span aria-hidden="true">/</span>
+        <Link to="/collections/all">Catálogo</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{title}</span>
+      </nav>
+      <div className="product-layout">
+        <ProductImage image={image} />
+        <div className="product-info">
+          {kicker && <span className="kicker">{kicker}</span>}
+          <h1>{title}</h1>
+          <ProductPrice
+            price={selectedVariant?.price}
+            compareAtPrice={selectedVariant?.compareAtPrice}
+          />
+          <div className="stock-line">
+            <span className={`stock-dot${available ? '' : ' out'}`} />
+            {available
+              ? 'En existencia, listo para despacho'
+              : 'Agotado por ahora'}
+          </div>
+          <ProductForm
+            productOptions={productOptions}
+            selectedVariant={selectedVariant}
+          />
+          <ul className="product-perks">
+            {PRODUCT_PERKS.map((perk) => (
+              <li key={perk}>{perk}</li>
+            ))}
+          </ul>
+          {descriptionHtml && (
+            <div className="product-description">
+              <h6>Descripción</h6>
+              <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
+            </div>
+          )}
+        </div>
       </div>
       <Analytics.ProductView
         data={{
@@ -189,8 +212,17 @@ const PRODUCT_FRAGMENT = `#graphql
     id
     title
     vendor
+    productType
     handle
     descriptionHtml
+    featuredImage {
+      __typename
+      id
+      url
+      altText
+      width
+      height
+    }
     description
     encodedVariantExistence
     encodedVariantAvailability
@@ -239,5 +271,5 @@ const PRODUCT_QUERY = `#graphql
   ${PRODUCT_FRAGMENT}
 `;
 
-/** @typedef {import('./+types/products.$handle').Route} Route */
+/** @typedef {import('./+types/($locale).products.$handle').Route} Route */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */

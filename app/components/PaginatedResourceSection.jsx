@@ -20,15 +20,11 @@ export function PaginatedResourceSection({
 
         return (
           <div>
-            <PreviousLink>
-              {isLoading ? (
-                'Loading...'
-              ) : (
-                <span>
-                  <span aria-hidden="true">↑</span> Load previous
-                </span>
-              )}
-            </PreviousLink>
+            <div className="pagination-link">
+              <PreviousLink className="btn btn-secondary">
+                {isLoading ? 'Cargando…' : 'Ver anteriores'}
+              </PreviousLink>
+            </div>
             {resourcesClassName ? (
               <div
                 aria-label={ariaLabel}
@@ -40,15 +36,11 @@ export function PaginatedResourceSection({
             ) : (
               resourcesMarkup
             )}
-            <NextLink>
-              {isLoading ? (
-                'Loading...'
-              ) : (
-                <span>
-                  Load more <span aria-hidden="true">↓</span>
-                </span>
-              )}
-            </NextLink>
+            <div className="pagination-link">
+              <NextLink className="btn btn-secondary">
+                {isLoading ? 'Cargando…' : 'Cargar más productos'}
+              </NextLink>
+            </div>
           </div>
         );
       }}

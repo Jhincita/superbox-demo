@@ -5,7 +5,7 @@ import {redirectIfHandleIsLocalized} from '~/lib/redirect';
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.page.title ?? ''}`}];
+  return [{title: `Superbox | ${data?.page.title ?? ''}`}];
 };
 
 /**
@@ -66,7 +66,7 @@ export default function Page() {
   const {page} = useLoaderData();
 
   return (
-    <div className="page">
+    <div className="container content-page page">
       <header>
         <h1>{page.title}</h1>
       </header>

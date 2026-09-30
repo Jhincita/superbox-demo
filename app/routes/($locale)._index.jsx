@@ -1,14 +1,27 @@
-import {Await, useLoaderData, Link} from 'react-router';
+import {Await, useLoaderData, useRouteLoaderData, Link} from 'react-router';
 import {Suspense} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {MockShopNotice} from '~/components/MockShopNotice';
+import {Icon, categoryIcon} from '~/components/Icon';
+import {getCategories} from '~/lib/categories';
+import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
+import {formatMoney} from '~/lib/format';
+import {DESIGN, HERO, STORE, VALUE_PROPS} from '~/lib/storeConfig';
+import heroFallbackImage from '~/assets/images/hero-barpos-d1a.png';
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [
+    {title: 'Superbox | Equipamiento para retail'},
+    {
+      name: 'description',
+      content:
+        'Lectores de código, terminales POS, impresoras y periféricos para el comercio chileno.',
+    },
+  ];
 };
 
 /**
@@ -30,14 +43,14 @@ export async function loader(args) {
  * @param {Route.LoaderArgs}
  */
 async function loadCriticalData({context}) {
-  const [{collections}] = await Promise.all([
-    context.storefront.query(FEATURED_COLLECTION_QUERY),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+  const {heroProduct, products} = await context.storefront.query(
+    HERO_PRODUCT_QUERY,
+    {variables: {handle: HERO.productHandle}},
+  );
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
-    featuredCollection: collections.nodes[0],
+    heroProduct: heroProduct ?? products.nodes[0] ?? null,
   };
 }
 
@@ -48,8 +61,8 @@ async function loadCriticalData({context}) {
  * @param {Route.LoaderArgs}
  */
 function loadDeferredData({context}) {
-  const recommendedProducts = context.storefront
-    .query(RECOMMENDED_PRODUCTS_QUERY)
+  const featuredProducts = context.storefront
+    .query(FEATURED_PRODUCTS_QUERY)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       console.error(error);
@@ -57,113 +70,188 @@ function loadDeferredData({context}) {
     });
 
   return {
-    recommendedProducts,
+    featuredProducts,
   };
 }
 
 export default function Homepage() {
   /** @type {LoaderReturnData} */
   const data = useLoaderData();
+  /** @type {import('~/root').RootLoader | undefined} */
+  const root = useRouteLoaderData('root');
+  const categories = getCategories(root?.header);
+
   return (
     <div className="home">
-      {data.isShopLinked ? null : <MockShopNotice />}
-      <FeaturedCollection collection={data.featuredCollection} />
-      <RecommendedProducts products={data.recommendedProducts} />
+      {data.isShopLinked ? null : (
+        <div className="container">
+          <MockShopNotice />
+        </div>
+      )}
+      <Hero product={data.heroProduct} />
+      <ValueProps />
+      {categories.length > 0 && <CategoryGrid categories={categories} />}
+      <FeaturedProducts products={data.featuredProducts} />
     </div>
   );
 }
 
 /**
- * @param {{
- *   collection: FeaturedCollectionFragment;
- * }}
+ * @param {{product: HeroProductFragment | null}}
  */
-function FeaturedCollection({collection}) {
-  if (!collection) return null;
-  const image = collection?.image;
+function Hero({product}) {
+  const image = product?.featuredImage;
+  const kicker = ['Destacado', product?.vendor].filter(Boolean).join(' · ');
+
   return (
-    <Link
-      className="featured-collection"
-      to={`/collections/${collection.handle}`}
-    >
-      {image && (
-        <div className="featured-collection-image">
-          <Image
-            data={image}
-            sizes="100vw"
-            alt={image.altText || collection.title}
-          />
+    <section className="container hero">
+      <div className="hero-copy">
+        <span className="tag tag-accent">{HERO.kicker}</span>
+        <h1>
+          {HERO.title} <span>{HERO.titleAccent}</span>
+        </h1>
+        <p>{HERO.text}</p>
+        <div className="hero-actions">
+          <Link
+            className="btn btn-primary btn-lg btn-split"
+            prefetch="intent"
+            to="/collections/all"
+          >
+            Ver catálogo <Icon name="arrow" size={18} strokeWidth={2.2} />
+          </Link>
+          <a
+            className="btn btn-outline btn-lg"
+            href={STORE.whatsappUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Hablar con un asesor
+          </a>
         </div>
-      )}
-      <h1>{collection.title}</h1>
-    </Link>
+      </div>
+      <Link
+        className="hero-card"
+        prefetch="intent"
+        to={product ? `/products/${product.handle}` : '/collections/all'}
+      >
+        {image ? (
+          <Image
+            alt={image.altText || product.title}
+            className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
+            data={image}
+            loading="eager"
+            sizes="(min-width: 64em) 520px, 90vw"
+          />
+        ) : (
+          <img
+            alt=""
+            className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
+            src={heroFallbackImage}
+          />
+        )}
+        {product && (
+          <span className="hero-card-caption">
+            <span>
+              <span className="kicker">{kicker}</span>
+              <strong>{product.title}</strong>
+            </span>
+            <strong>{formatMoney(product.priceRange.minVariantPrice)}</strong>
+          </span>
+        )}
+      </Link>
+    </section>
+  );
+}
+
+function ValueProps() {
+  return (
+    <section className="value-props">
+      <div className="container value-props-grid">
+        {VALUE_PROPS.map((prop) => (
+          <div className="value-prop" key={prop.title}>
+            <Icon name={prop.icon} size={26} strokeWidth={1.8} />
+            <div>
+              <strong>{prop.title}</strong>
+              <span>{prop.text}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * @param {{categories: import('~/lib/categories').Category[]}}
+ */
+function CategoryGrid({categories}) {
+  return (
+    <section className="container home-section" aria-labelledby="home-cats">
+      <div className="section-head">
+        <h2 id="home-cats">Compra por categoría</h2>
+        <Link className="btn btn-ghost" prefetch="intent" to="/collections/all">
+          Ver todos los productos
+        </Link>
+      </div>
+      <div className="category-grid">
+        {categories.map((category) => (
+          <Link
+            className="category-card"
+            key={category.id}
+            prefetch="intent"
+            to={`/collections/${category.handle}`}
+          >
+            <Icon
+              name={categoryIcon(`${category.handle} ${category.title}`)}
+              size={40}
+              strokeWidth={1.6}
+            />
+            <span>
+              <strong>{category.title}</strong>
+              <span>Ver productos</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
 /**
  * @param {{
- *   products: Promise<RecommendedProductsQuery | null>;
+ *   products: Promise<FeaturedProductsQuery | null>;
  * }}
  */
-function RecommendedProducts({products}) {
+function FeaturedProducts({products}) {
   return (
-    <section
-      className="recommended-products"
-      aria-labelledby="recommended-products"
-    >
-      <h2 id="recommended-products">Recommended Products</h2>
-      <Suspense fallback={<div>Loading...</div>}>
+    <section className="container home-section" aria-labelledby="home-featured">
+      <div className="section-head ruled">
+        <h2 id="home-featured">Los más buscados</h2>
+        <Link className="btn btn-ghost" prefetch="intent" to="/collections/all">
+          Ver catálogo completo
+        </Link>
+      </div>
+      <Suspense fallback={<p className="muted">Cargando productos…</p>}>
         <Await resolve={products}>
           {(response) => (
-            <div className="recommended-products-grid">
-              {response
-                ? response.products.nodes.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))
-                : null}
+            <div className="product-grid">
+              {response?.products.nodes.map((product) => (
+                <ProductItem key={product.id} product={product} loading="lazy" />
+              ))}
             </div>
           )}
         </Await>
       </Suspense>
-      <br />
     </section>
   );
 }
 
-const FEATURED_COLLECTION_QUERY = `#graphql
-  fragment FeaturedCollection on Collection {
-    id
-    title
-    image {
-      id
-      url
-      altText
-      width
-      height
-    }
-    handle
-  }
-  query FeaturedCollection($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
-    collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
-      nodes {
-        ...FeaturedCollection
-      }
-    }
-  }
-`;
-
-const RECOMMENDED_PRODUCTS_QUERY = `#graphql
-  fragment RecommendedProduct on Product {
+const HERO_PRODUCT_QUERY = `#graphql
+  fragment HeroProduct on Product {
     id
     title
     handle
-    priceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
-    }
+    vendor
     featuredImage {
       id
       url
@@ -171,18 +259,42 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       width
       height
     }
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
   }
-  query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
-    products(first: 4, sortKey: UPDATED_AT, reverse: true) {
+  query HeroProduct(
+    $handle: String!
+    $country: CountryCode
+    $language: LanguageCode
+  ) @inContext(country: $country, language: $language) {
+    heroProduct: product(handle: $handle) {
+      ...HeroProduct
+    }
+    products(first: 1, sortKey: BEST_SELLING) {
       nodes {
-        ...RecommendedProduct
+        ...HeroProduct
       }
     }
   }
 `;
 
-/** @typedef {import('./+types/_index').Route} Route */
-/** @typedef {import('storefrontapi.generated').FeaturedCollectionFragment} FeaturedCollectionFragment */
-/** @typedef {import('storefrontapi.generated').RecommendedProductsQuery} RecommendedProductsQuery */
+const FEATURED_PRODUCTS_QUERY = `#graphql
+  query FeaturedProducts($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    products(first: 8, sortKey: BEST_SELLING) {
+      nodes {
+        ...ProductCard
+      }
+    }
+  }
+  ${PRODUCT_CARD_FRAGMENT}
+`;
+
+/** @typedef {import('./+types/($locale)._index').Route} Route */
+/** @typedef {import('storefrontapi.generated').HeroProductFragment} HeroProductFragment */
+/** @typedef {import('storefrontapi.generated').FeaturedProductsQuery} FeaturedProductsQuery */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */

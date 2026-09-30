@@ -1,4 +1,5 @@
 import {useLoaderData} from 'react-router';
+import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchForm} from '~/components/SearchForm';
 import {SearchResults} from '~/components/SearchResults';
@@ -8,7 +9,7 @@ import {getEmptyPredictiveSearchResult} from '~/lib/search';
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Search`}];
+  return [{title: `Superbox | Buscar`}];
 };
 
 /**
@@ -38,24 +39,27 @@ export default function SearchPage() {
   if (type === 'predictive') return null;
 
   return (
-    <div className="search">
-      <h1>Search</h1>
-      <SearchForm>
+    <div className="container content-page search">
+      <h1>{term ? `Resultados para “${term}”` : 'Buscar'}</h1>
+      <SearchForm className="search-form">
         {({inputRef}) => (
           <>
             <input
+              aria-label="Buscar"
+              className="input"
               defaultValue={term}
               name="q"
-              placeholder="Search…"
+              placeholder="Buscar lectores, POS, impresoras…"
               ref={inputRef}
               type="search"
             />
-            &nbsp;
-            <button type="submit">Search</button>
+            <button className="btn btn-primary" type="submit">
+              Buscar
+            </button>
           </>
         )}
       </SearchForm>
-      {error && <p style={{color: 'red'}}>{error}</p>}
+      {error && <p className="muted">{error}</p>}
       {!term || !result?.total ? (
         <SearchResults.Empty />
       ) : (
@@ -87,6 +91,7 @@ const SEARCH_PRODUCT_FRAGMENT = `#graphql
     title
     trackingParameters
     vendor
+    ...ProductCard
     selectedOrFirstAvailableVariant(
       selectedOptions: []
       ignoreUnknownOptions: true
@@ -117,6 +122,7 @@ const SEARCH_PRODUCT_FRAGMENT = `#graphql
       }
     }
   }
+  ${PRODUCT_CARD_FRAGMENT}
 `;
 
 const SEARCH_PAGE_FRAGMENT = `#graphql
