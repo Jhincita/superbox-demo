@@ -14,6 +14,7 @@ import {Icon, Logo} from '~/components/Icon';
 import {ThemeToggle} from '~/components/ThemeToggle';
 import {getCategories} from '~/lib/categories';
 import {STORE} from '~/lib/storeConfig';
+import SuperBoxLogo from '~/assets/images/logo_superbox.png';
 
 /**
  * @param {HeaderProps}
@@ -28,8 +29,12 @@ export function Header({header, cart, publicStoreDomain}) {
       <header className="header">
         <div className="container header-main">
           <Link prefetch="intent" to="/" className="brand" aria-label="Inicio">
-            <Logo />
-            <span className="brand-name">{STORE.name || shop.name}</span>
+            <img
+              src={SuperBoxLogo}
+              alt={STORE.name || shop.name}
+              className="brand-logo"
+            />
+
           </Link>
           <HeaderMenu
             menu={menu}

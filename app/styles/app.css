@@ -44,7 +44,7 @@
 
 /* ——— Tokens ——— */
 :root {
-  --color-bg: #f3f2f2;
+  --color-bg: #ffffff;
   --color-surface: #eae9e9;
   --color-text: #201e1d;
   --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
@@ -96,7 +96,7 @@
 :root[data-theme='dark'] {
   --color-bg: #141211;
   --color-surface: #1f1c1a;
-  --color-text: #f2ede9;
+  --color-text: #ffffff;
   --color-divider: color-mix(in srgb, #f2ede9 26%, transparent);
   --tile: #edeae7;
   --accent-ink: #f0a46e;
@@ -508,9 +508,12 @@ select.input {
   letter-spacing: -0.03em;
 }
 .brand-logo {
-  height: 30px;
-  width: auto;
+    display: block;
+    width: 260px;
+    height: auto;
 }
+
+
 .header-nav {
   display: flex;
   align-items: center;
