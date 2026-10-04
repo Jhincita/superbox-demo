@@ -36,6 +36,8 @@ export default defineConfig({
         'react-router > set-cookie-parser',
         'react-router > cookie',
         'react-router',
+        // CommonJS sanitizer used by app/lib/sanitizeHtml.server.js
+        'xss',
       ],
     },
   },
