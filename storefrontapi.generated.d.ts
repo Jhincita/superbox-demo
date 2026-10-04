@@ -418,7 +418,7 @@ export type FooterQuery = {
 
 export type HeroProductFragment = Pick<
   StorefrontAPI.Product,
-  'id' | 'title' | 'handle' | 'vendor'
+  'id' | 'title' | 'handle'
 > & {
   featuredImage?: StorefrontAPI.Maybe<
     Pick<StorefrontAPI.Image, 'id' | 'url' | 'altText' | 'width' | 'height'>
@@ -426,28 +426,61 @@ export type HeroProductFragment = Pick<
   priceRange: {
     minVariantPrice: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
   };
+  compareAtPriceRange: {
+    minVariantPrice: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
+  };
+  tagline?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+  heroSpecs?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+};
+
+export type PromoCollectionFragment = Pick<
+  StorefrontAPI.Collection,
+  'id' | 'handle'
+> & {
+  image?: StorefrontAPI.Maybe<
+    Pick<StorefrontAPI.Image, 'id' | 'url' | 'altText' | 'width' | 'height'>
+  >;
+  products: {
+    nodes: Array<
+      Pick<StorefrontAPI.Product, 'id'> & {
+        priceRange: {
+          minVariantPrice: Pick<
+            StorefrontAPI.MoneyV2,
+            'amount' | 'currencyCode'
+          >;
+        };
+      }
+    >;
+  };
 };
 
 export type HeroProductQueryVariables = StorefrontAPI.Exact<{
   handle: StorefrontAPI.Scalars['String']['input'];
+  tileAHandle: StorefrontAPI.Scalars['String']['input'];
+  tileBHandle: StorefrontAPI.Scalars['String']['input'];
   country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
   language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
 }>;
 
 export type HeroProductQuery = {
   heroProduct?: StorefrontAPI.Maybe<
-    Pick<StorefrontAPI.Product, 'id' | 'title' | 'handle' | 'vendor'> & {
+    Pick<StorefrontAPI.Product, 'id' | 'title' | 'handle'> & {
       featuredImage?: StorefrontAPI.Maybe<
         Pick<StorefrontAPI.Image, 'id' | 'url' | 'altText' | 'width' | 'height'>
       >;
       priceRange: {
         minVariantPrice: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
       };
+      compareAtPriceRange: {
+        minVariantPrice: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
+      };
+      tagline?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+      heroSpecs?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
     }
   >;
   products: {
     nodes: Array<
-      Pick<StorefrontAPI.Product, 'id' | 'title' | 'handle' | 'vendor'> & {
+      Pick<StorefrontAPI.Product, 'id' | 'title' | 'handle'> & {
         featuredImage?: StorefrontAPI.Maybe<
           Pick<
             StorefrontAPI.Image,
@@ -460,12 +493,59 @@ export type HeroProductQuery = {
             'amount' | 'currencyCode'
           >;
         };
+        compareAtPriceRange: {
+          minVariantPrice: Pick<
+            StorefrontAPI.MoneyV2,
+            'amount' | 'currencyCode'
+          >;
+        };
+        tagline?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
+        heroSpecs?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Metafield, 'value'>>;
       }
     >;
   };
+  tileA?: StorefrontAPI.Maybe<
+    Pick<StorefrontAPI.Collection, 'id' | 'handle'> & {
+      image?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.Image, 'id' | 'url' | 'altText' | 'width' | 'height'>
+      >;
+      products: {
+        nodes: Array<
+          Pick<StorefrontAPI.Product, 'id'> & {
+            priceRange: {
+              minVariantPrice: Pick<
+                StorefrontAPI.MoneyV2,
+                'amount' | 'currencyCode'
+              >;
+            };
+          }
+        >;
+      };
+    }
+  >;
+  tileB?: StorefrontAPI.Maybe<
+    Pick<StorefrontAPI.Collection, 'id' | 'handle'> & {
+      image?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.Image, 'id' | 'url' | 'altText' | 'width' | 'height'>
+      >;
+      products: {
+        nodes: Array<
+          Pick<StorefrontAPI.Product, 'id'> & {
+            priceRange: {
+              minVariantPrice: Pick<
+                StorefrontAPI.MoneyV2,
+                'amount' | 'currencyCode'
+              >;
+            };
+          }
+        >;
+      };
+    }
+  >;
 };
 
 export type FeaturedProductsQueryVariables = StorefrontAPI.Exact<{
+  first: StorefrontAPI.Scalars['Int']['input'];
   country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
   language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
 }>;
@@ -1419,11 +1499,11 @@ interface GeneratedQueryTypes {
     return: FooterQuery;
     variables: FooterQueryVariables;
   };
-  '#graphql\n  fragment HeroProduct on Product {\n    id\n    title\n    handle\n    vendor\n    featuredImage {\n      id\n      url\n      altText\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n  }\n  query HeroProduct(\n    $handle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    heroProduct: product(handle: $handle) {\n      ...HeroProduct\n    }\n    products(first: 1, sortKey: BEST_SELLING) {\n      nodes {\n        ...HeroProduct\n      }\n    }\n  }\n': {
+  '#graphql\n  fragment HeroProduct on Product {\n    id\n    title\n    handle\n    featuredImage {\n      id\n      url\n      altText\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    compareAtPriceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    tagline: metafield(namespace: "custom", key: "tagline") {\n      value\n    }\n    heroSpecs: metafield(namespace: "custom", key: "hero_specs") {\n      value\n    }\n  }\n  fragment PromoCollection on Collection {\n    id\n    handle\n    image {\n      id\n      url\n      altText\n      width\n      height\n    }\n    products(first: 1, sortKey: PRICE) {\n      nodes {\n        id\n        priceRange {\n          minVariantPrice {\n            amount\n            currencyCode\n          }\n        }\n      }\n    }\n  }\n  query HeroProduct(\n    $handle: String!\n    $tileAHandle: String!\n    $tileBHandle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    heroProduct: product(handle: $handle) {\n      ...HeroProduct\n    }\n    products(first: 1, sortKey: BEST_SELLING) {\n      nodes {\n        ...HeroProduct\n      }\n    }\n    tileA: collection(handle: $tileAHandle) {\n      ...PromoCollection\n    }\n    tileB: collection(handle: $tileBHandle) {\n      ...PromoCollection\n    }\n  }\n': {
     return: HeroProductQuery;
     variables: HeroProductQueryVariables;
   };
-  '#graphql\n  query FeaturedProducts($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    products(first: 8, sortKey: BEST_SELLING) {\n      nodes {\n        ...ProductCard\n      }\n    }\n  }\n  #graphql\n  fragment ProductCard on Product {\n    id\n    handle\n    title\n    vendor\n    productType\n    availableForSale\n    featuredImage {\n      id\n      altText\n      url\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    compareAtPriceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    variants(first: 2) {\n      nodes {\n        id\n        availableForSale\n      }\n    }\n  }\n\n': {
+  '#graphql\n  query FeaturedProducts(\n    $first: Int!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    products(first: $first, sortKey: BEST_SELLING) {\n      nodes {\n        ...ProductCard\n      }\n    }\n  }\n  #graphql\n  fragment ProductCard on Product {\n    id\n    handle\n    title\n    vendor\n    productType\n    availableForSale\n    featuredImage {\n      id\n      altText\n      url\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    compareAtPriceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n    variants(first: 2) {\n      nodes {\n        id\n        availableForSale\n      }\n    }\n  }\n\n': {
     return: FeaturedProductsQuery;
     variables: FeaturedProductsQueryVariables;
   };

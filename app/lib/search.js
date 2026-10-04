@@ -37,7 +37,7 @@ export function urlWithTrackingParams({
 }) {
   let search = new URLSearchParams({
     ...extraParams,
-    q: encodeURIComponent(term),
+    q: term,
   }).toString();
 
   if (trackingParams) {

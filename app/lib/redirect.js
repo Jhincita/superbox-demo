@@ -1,4 +1,5 @@
 import {redirect} from 'react-router';
+import {safeRedirectPath} from '~/lib/urls';
 
 /**
  * @param {Request} request
@@ -19,6 +20,7 @@ export function redirectIfHandleIsLocalized(request, ...localizedResources) {
   });
 
   if (shouldRedirect) {
-    throw redirect(url.toString());
+    // Redirect to a same-origin relative path only, never an absolute URL.
+    throw redirect(safeRedirectPath(`${url.pathname}${url.search}`));
   }
 }

@@ -6,9 +6,12 @@ import {MockShopNotice} from '~/components/MockShopNotice';
 import {Icon, categoryIcon} from '~/components/Icon';
 import {getCategories} from '~/lib/categories';
 import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
-import {formatMoney} from '~/lib/format';
-import {DESIGN, HERO, STORE, VALUE_PROPS} from '~/lib/storeConfig';
+import {discountPercent, formatMoney} from '~/lib/format';
+import {HERO, PROMO_TILES} from '~/lib/storeConfig';
 import heroFallbackImage from '~/assets/images/hero-barpos-d1a.png';
+
+/** Products shown in "Lo más vendido". */
+const FEATURED_COUNT = 4;
 
 /**
  * @type {Route.MetaFunction}
@@ -43,14 +46,25 @@ export async function loader(args) {
  * @param {Route.LoaderArgs}
  */
 async function loadCriticalData({context}) {
-  const {heroProduct, products} = await context.storefront.query(
-    HERO_PRODUCT_QUERY,
-    {variables: {handle: HERO.productHandle}},
+  const {heroProduct, products, tileA, tileB} = await context.storefront.query(
+    HERO_QUERY,
+    {
+      variables: {
+        handle: HERO.productHandle,
+        tileAHandle: PROMO_TILES[0].collectionHandle,
+        tileBHandle: PROMO_TILES[1].collectionHandle,
+      },
+    },
   );
+
+  const product = heroProduct ?? products.nodes[0] ?? null;
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
-    heroProduct: heroProduct ?? products.nodes[0] ?? null,
+    hero: product ? toHeroData(product) : null,
+    promoTiles: PROMO_TILES.map((tile, i) =>
+      toPromoTile(tile, i === 0 ? tileA : tileB),
+    ),
   };
 }
 
@@ -62,7 +76,7 @@ async function loadCriticalData({context}) {
  */
 function loadDeferredData({context}) {
   const featuredProducts = context.storefront
-    .query(FEATURED_PRODUCTS_QUERY)
+    .query(FEATURED_PRODUCTS_QUERY, {variables: {first: FEATURED_COUNT}})
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       console.error(error);
@@ -72,6 +86,79 @@ function loadDeferredData({context}) {
   return {
     featuredProducts,
   };
+}
+
+/**
+ * Reduces the hero product to plain values. Metafield text is kept as plain
+ * strings (React escapes it); nothing from Shopify is rendered as HTML.
+ * @param {HeroProductFragment} product
+ */
+function toHeroData(product) {
+  const price = product.priceRange.minVariantPrice;
+  const compareAt = product.compareAtPriceRange?.minVariantPrice ?? null;
+  const percent = discountPercent(price, compareAt);
+
+  return {
+    handle: product.handle,
+    title: product.title,
+    text: plainText(product.tagline?.value, 200) || HERO.text,
+    specs: parseSpecs(product.heroSpecs?.value) ?? HERO.specs.slice(0, 3),
+    image: product.featuredImage ?? null,
+    price: Number(price.amount) > 0 ? price : null,
+    compareAtPrice: percent ? compareAt : null,
+    discount: percent,
+  };
+}
+
+/**
+ * @param {(typeof PROMO_TILES)[number]} tile
+ * @param {PromoCollectionFragment | null | undefined} collection
+ */
+function toPromoTile(tile, collection) {
+  const minPrice = collection?.products.nodes[0]?.priceRange.minVariantPrice;
+  const computed =
+    tile.fromPrice && minPrice && Number(minPrice.amount) > 0
+      ? `DESDE ${formatMoney(minPrice)}`
+      : null;
+
+  return {
+    to: `/collections/${collection?.handle ?? tile.collectionHandle}`,
+    title: tile.title,
+    kicker: tile.kicker ?? computed ?? tile.fallbackKicker,
+    tone: tile.tone,
+    image: collection?.image ?? null,
+  };
+}
+
+/**
+ * @param {string | null | undefined} value
+ * @param {number} max
+ */
+function plainText(value, max) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+/**
+ * `custom.hero_specs` is a list metafield (JSON array of strings). Returns
+ * exactly 3 specs, or null so the config fallback is used.
+ * @param {string | null | undefined} value
+ * @return {string[] | null}
+ */
+function parseSpecs(value) {
+  if (!value) return null;
+  let list;
+  try {
+    list = JSON.parse(value);
+  } catch {
+    list = value.split(/[\n,]/);
+  }
+  if (!Array.isArray(list)) return null;
+  const specs = list
+    .filter((item) => typeof item === 'string')
+    .map((item) => plainText(item, 40))
+    .filter(Boolean);
+  return specs.length >= 3 ? specs.slice(0, 3) : null;
 }
 
 export default function Homepage() {
@@ -88,8 +175,10 @@ export default function Homepage() {
           <MockShopNotice />
         </div>
       )}
-      <Hero product={data.heroProduct} />
-      <ValueProps />
+      <section className="container hero" aria-label="Destacados">
+        <Hero hero={data.hero} />
+        <PromoStack tiles={data.promoTiles} />
+      </section>
       {categories.length > 0 && <CategoryGrid categories={categories} />}
       <FeaturedProducts products={data.featuredProducts} />
     </div>
@@ -97,87 +186,133 @@ export default function Homepage() {
 }
 
 /**
- * @param {{product: HeroProductFragment | null}}
+ * @param {{hero: ReturnType<typeof toHeroData> | null}}
  */
-function Hero({product}) {
-  const image = product?.featuredImage;
-  const kicker = ['Destacado', product?.vendor].filter(Boolean).join(' · ');
-
-  return (
-    <section className="container hero">
-      <div className="hero-copy">
-        <span className="tag tag-accent">{HERO.kicker}</span>
-        <h1>
-          {HERO.title} <span>{HERO.titleAccent}</span>
-        </h1>
-        <p>{HERO.text}</p>
-        <div className="hero-actions">
-          <Link
-            className="btn btn-primary btn-lg btn-split"
-            prefetch="intent"
-            to="/collections/all"
-          >
-            Ver catálogo <Icon name="arrow" size={18} strokeWidth={2.2} />
-          </Link>
-          <a
-            className="btn btn-outline btn-lg"
-            href={STORE.whatsappUrl}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Hablar con un asesor
-          </a>
+function Hero({hero}) {
+  if (!hero) {
+    return (
+      <div className="hero-card">
+        <div className="hero-copy">
+          <h1 className="hero-title">{HERO.title}</h1>
+          <p className="hero-text">{HERO.text}</p>
+          <div className="hero-buy">
+            <Link className="btn-buy" prefetch="intent" to="/collections/all">
+              Ver catálogo
+            </Link>
+          </div>
+        </div>
+        <div className="hero-media">
+          <img alt="" height={340} src={heroFallbackImage} width={340} />
         </div>
       </div>
-      <Link
-        className="hero-card"
-        prefetch="intent"
-        to={product ? `/products/${product.handle}` : '/collections/all'}
-      >
-        {image ? (
+    );
+  }
+
+  const to = `/products/${hero.handle}`;
+
+  return (
+    <div className="hero-card">
+      <div className="hero-copy">
+        <span className="hero-tag">Producto destacado</span>
+        <h1 className="hero-title">
+          <HeroTitle title={hero.title} />
+        </h1>
+        <p className="hero-text">{hero.text}</p>
+        <ul className="hero-chips" aria-label="Especificaciones">
+          {hero.specs.map((spec) => (
+            <li className="hero-chip" key={spec}>
+              {spec}
+            </li>
+          ))}
+        </ul>
+        <div className="hero-buy">
+          <Link className="btn-buy" prefetch="intent" to={to}>
+            Comprar ahora
+          </Link>
+          {hero.price && (
+            <div className="hero-prices">
+              {hero.compareAtPrice && (
+                <s className="hero-price-old">
+                  <span className="sr-only">Antes </span>
+                  {formatMoney(hero.compareAtPrice)}
+                </s>
+              )}
+              <strong className="hero-price">
+                {hero.compareAtPrice && <span className="sr-only">Ahora </span>}
+                {formatMoney(hero.price)}
+              </strong>
+            </div>
+          )}
+        </div>
+      </div>
+      <Link className="hero-media" prefetch="intent" tabIndex={-1} to={to}>
+        {hero.image ? (
           <Image
-            alt={image.altText || product.title}
-            className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
-            data={image}
+            alt={hero.image.altText || hero.title}
+            aspectRatio="1/1"
+            data={hero.image}
             loading="eager"
-            sizes="(min-width: 64em) 520px, 90vw"
+            sizes="340px"
           />
         ) : (
-          <img
-            alt=""
-            className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
-            src={heroFallbackImage}
-          />
+          <img alt="" height={340} src={heroFallbackImage} width={340} />
         )}
-        {product && (
-          <span className="hero-card-caption">
-            <span>
-              <span className="kicker">{kicker}</span>
-              <strong>{product.title}</strong>
-            </span>
-            <strong>{formatMoney(product.priceRange.minVariantPrice)}</strong>
+        {hero.discount && (
+          <span className="hero-save">
+            <small>AHORRA</small>
+            <strong>{hero.discount}%</strong>
           </span>
         )}
       </Link>
-    </section>
+    </div>
   );
 }
 
-function ValueProps() {
+/**
+ * @param {{title: string}}
+ */
+function HeroTitle({title}) {
+  const marker = HERO.titleBreakAfter;
+  if (!marker || !title.startsWith(marker) || title.length === marker.length) {
+    return title;
+  }
   return (
-    <section className="value-props">
-      <div className="container value-props-grid">
-        {VALUE_PROPS.map((prop) => (
-          <div className="value-prop" key={prop.title}>
-            <Icon name={prop.icon} size={26} strokeWidth={1.8} />
-            <div>
-              <strong>{prop.title}</strong>
-              <span>{prop.text}</span>
-            </div>
+    <>
+      {marker}
+      <br />
+      {title.slice(marker.length).trim()}
+    </>
+  );
+}
+
+/**
+ * @param {{tiles: Array<ReturnType<typeof toPromoTile>>}}
+ */
+function PromoStack({tiles}) {
+  return (
+    <div className="promo-stack">
+      {tiles.map((tile) => (
+        <Link
+          className={`promo-tile ${tile.tone}`}
+          key={tile.to}
+          prefetch="intent"
+          to={tile.to}
+        >
+          {tile.image && (
+            <Image
+              alt=""
+              data={tile.image}
+              loading="eager"
+              sizes="(min-width: 1080px) 420px, 100vw"
+            />
+          )}
+          <div>
+            <span className="promo-kicker">{tile.kicker}</span>
+            <span className="promo-title">{tile.title}</span>
           </div>
-        ))}
-      </div>
-    </section>
+        </Link>
+      ))}
+    </div>
   );
 }
 
@@ -186,13 +321,7 @@ function ValueProps() {
  */
 function CategoryGrid({categories}) {
   return (
-    <section className="container home-section" aria-labelledby="home-cats">
-      <div className="section-head">
-        <h2 id="home-cats">Compra por categoría</h2>
-        <Link className="btn btn-ghost" prefetch="intent" to="/collections/all">
-          Ver todos los productos
-        </Link>
-      </div>
+    <section className="container" aria-label="Categorías">
       <div className="category-grid">
         {categories.map((category) => (
           <Link
@@ -201,11 +330,14 @@ function CategoryGrid({categories}) {
             prefetch="intent"
             to={`/collections/${category.handle}`}
           >
-            <Icon
-              name={categoryIcon(`${category.handle} ${category.title}`)}
-              size={40}
-              strokeWidth={1.6}
-            />
+            <span className="category-icon">
+              <Icon
+                mono
+                name={categoryIcon(`${category.handle} ${category.title}`)}
+                size={26}
+                strokeWidth={1.8}
+              />
+            </span>
             <span>
               <strong>{category.title}</strong>
               <span>Ver productos</span>
@@ -224,14 +356,14 @@ function CategoryGrid({categories}) {
  */
 function FeaturedProducts({products}) {
   return (
-    <section className="container home-section" aria-labelledby="home-featured">
-      <div className="section-head ruled">
-        <h2 id="home-featured">Los más buscados</h2>
-        <Link className="btn btn-ghost" prefetch="intent" to="/collections/all">
-          Ver catálogo completo
+    <section className="container" aria-labelledby="home-featured">
+      <div className="section-head">
+        <h2 id="home-featured">Lo más vendido</h2>
+        <Link prefetch="intent" to="/collections/all">
+          Ver todo →
         </Link>
       </div>
-      <Suspense fallback={<p className="muted">Cargando productos…</p>}>
+      <Suspense fallback={<ProductGridSkeleton count={FEATURED_COUNT} />}>
         <Await resolve={products}>
           {(response) => (
             <div className="product-grid">
@@ -246,12 +378,29 @@ function FeaturedProducts({products}) {
   );
 }
 
-const HERO_PRODUCT_QUERY = `#graphql
+/**
+ * @param {{count: number}}
+ */
+function ProductGridSkeleton({count}) {
+  return (
+    <div className="product-grid" aria-busy="true" aria-label="Cargando productos">
+      {Array.from({length: count}, (_, i) => (
+        <div className="product-card skeleton" key={i} aria-hidden="true">
+          <span className="product-tile" />
+          <span className="skeleton-line short" />
+          <span className="skeleton-line" />
+          <span className="skeleton-line price" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const HERO_QUERY = `#graphql
   fragment HeroProduct on Product {
     id
     title
     handle
-    vendor
     featuredImage {
       id
       url
@@ -265,9 +414,45 @@ const HERO_PRODUCT_QUERY = `#graphql
         currencyCode
       }
     }
+    compareAtPriceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    tagline: metafield(namespace: "custom", key: "tagline") {
+      value
+    }
+    heroSpecs: metafield(namespace: "custom", key: "hero_specs") {
+      value
+    }
+  }
+  fragment PromoCollection on Collection {
+    id
+    handle
+    image {
+      id
+      url
+      altText
+      width
+      height
+    }
+    products(first: 1, sortKey: PRICE) {
+      nodes {
+        id
+        priceRange {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+      }
+    }
   }
   query HeroProduct(
     $handle: String!
+    $tileAHandle: String!
+    $tileBHandle: String!
     $country: CountryCode
     $language: LanguageCode
   ) @inContext(country: $country, language: $language) {
@@ -279,13 +464,22 @@ const HERO_PRODUCT_QUERY = `#graphql
         ...HeroProduct
       }
     }
+    tileA: collection(handle: $tileAHandle) {
+      ...PromoCollection
+    }
+    tileB: collection(handle: $tileBHandle) {
+      ...PromoCollection
+    }
   }
 `;
 
 const FEATURED_PRODUCTS_QUERY = `#graphql
-  query FeaturedProducts($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
-    products(first: 8, sortKey: BEST_SELLING) {
+  query FeaturedProducts(
+    $first: Int!
+    $country: CountryCode
+    $language: LanguageCode
+  ) @inContext(country: $country, language: $language) {
+    products(first: $first, sortKey: BEST_SELLING) {
       nodes {
         ...ProductCard
       }
@@ -296,5 +490,6 @@ const FEATURED_PRODUCTS_QUERY = `#graphql
 
 /** @typedef {import('./+types/($locale)._index').Route} Route */
 /** @typedef {import('storefrontapi.generated').HeroProductFragment} HeroProductFragment */
+/** @typedef {import('storefrontapi.generated').PromoCollectionFragment} PromoCollectionFragment */
 /** @typedef {import('storefrontapi.generated').FeaturedProductsQuery} FeaturedProductsQuery */
 /** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */

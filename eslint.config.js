@@ -32,6 +32,8 @@ export default [
       '**/*.generated.d.ts',
       '**/.react-router/',
       '**/packages/hydrogen/dist/',
+      // Design hand-off bundle (reference HTML/JS, not app code).
+      'redesign_ver2/',
     ],
   },
   ...fixupConfigRules(
@@ -153,7 +155,7 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: './tsconfig.json',
+        project: './jsconfig.json',
         tsconfigRootDir: __dirname,
         ecmaFeatures: {
           jsx: true,
