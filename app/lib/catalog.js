@@ -20,14 +20,20 @@ export function parseCatalogParams(searchParams) {
     ? /** @type {CatalogSort} */ (sortParam)
     : 'rel';
   const inStock = searchParams.get(CATALOG_PARAMS.stock) === 'en-existencia';
-  const maxParam = Number(searchParams.get(CATALOG_PARAMS.max));
-  const maxPrice =
-    Number.isFinite(maxParam) &&
-    maxParam >= PRICE_FILTER.min &&
-    maxParam < PRICE_FILTER.max
-      ? maxParam
-      : null;
+  const maxPrice = parseMaxPrice(searchParams.get(CATALOG_PARAMS.max));
   return {sort, inStock, maxPrice};
+}
+
+/**
+ * `max` must be a plain integer. It is clamped to PRICE_FILTER; values at or
+ * above the slider's upper bound mean "no price filter".
+ * @param {string | null} raw
+ * @return {number | null}
+ */
+export function parseMaxPrice(raw) {
+  if (!raw || !/^\d{1,9}$/.test(raw)) return null;
+  const value = Math.max(Number.parseInt(raw, 10), PRICE_FILTER.min);
+  return value >= PRICE_FILTER.max ? null : value;
 }
 
 /**

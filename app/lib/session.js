@@ -36,6 +36,10 @@ export class AppSession {
         httpOnly: true,
         path: '/',
         sameSite: 'lax',
+        // Always secure in production; local dev may run on http://localhost.
+        secure:
+          process.env.NODE_ENV === 'production' ||
+          new URL(request.url).protocol === 'https:',
         secrets,
       },
     });

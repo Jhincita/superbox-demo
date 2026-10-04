@@ -27,9 +27,7 @@ export async function createHydrogenRouterContext(
   /**
    * Open a cache instance in the worker and a custom session instance.
    */
-  if (!env?.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET environment variable is not set');
-  }
+  assertSessionSecret(env?.SESSION_SECRET);
 
   const waitUntil = executionContext.waitUntil.bind(executionContext);
   const [cache, session] = await Promise.all([
@@ -54,6 +52,25 @@ export async function createHydrogenRouterContext(
   );
 
   return hydrogenContext;
+}
+
+/** Minimum length of SESSION_SECRET (it signs the session cookie). */
+const MIN_SESSION_SECRET_LENGTH = 32;
+
+/**
+ * Fails fast when the cookie-signing secret is missing or too short to be
+ * safe. The error message never includes the secret itself.
+ * @param {string | undefined} secret
+ */
+export function assertSessionSecret(secret) {
+  if (!secret) {
+    throw new Error('SESSION_SECRET environment variable is not set');
+  }
+  if (secret.length < MIN_SESSION_SECRET_LENGTH) {
+    throw new Error(
+      `SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters`,
+    );
+  }
 }
 
 /** @typedef {Class<additionalContext>} AdditionalContextType */

@@ -3,7 +3,6 @@ import {
   Await,
   Form,
   Link,
-  NavLink,
   useAsyncValue,
   useLocation,
   useSearchParams,
@@ -13,13 +12,15 @@ import {useAside} from '~/components/Aside';
 import {Icon, Logo} from '~/components/Icon';
 import {ThemeToggle} from '~/components/ThemeToggle';
 import {getCategories} from '~/lib/categories';
-import {STORE} from '~/lib/storeConfig';
+import {PROMO_PILL, STORE, TOPBAR_ITEMS} from '~/lib/storeConfig';
+import {SEARCH_TERM_MAX_LENGTH, normalizeSearchTerm} from '~/lib/urls';
 
 /**
+ * Theme 1a header: olive topbar, orange band (logo, search, actions) and the
+ * white category bar.
  * @param {HeaderProps}
  */
-export function Header({header, cart, publicStoreDomain}) {
-  const {shop, menu} = header;
+export function Header({header, cart}) {
   const categories = getCategories(header);
 
   return (
@@ -28,32 +29,20 @@ export function Header({header, cart, publicStoreDomain}) {
       <header className="header">
         <div className="container header-main">
           <Link prefetch="intent" to="/" className="brand" aria-label="Inicio">
-            <Logo />
-            <span className="brand-name">{STORE.name || shop.name}</span>
+            <Logo size={42} variant="onOrange" />
+            <span className="brand-name">{STORE.name}</span>
           </Link>
-          <HeaderMenu
-            menu={menu}
-            primaryDomainUrl={shop.primaryDomain.url}
-            publicStoreDomain={publicStoreDomain}
-          />
+          <HeaderSearch />
           <div className="header-actions">
             <ThemeToggle />
-            <Link
-              prefetch="intent"
-              to="/account"
-              aria-label="Mi cuenta"
-              className="icon-btn"
-            >
-              <Icon name="user" size={21} strokeWidth={1.8} />
+            <Link prefetch="intent" to="/account">
+              Ingresar
             </Link>
             <CartToggle cart={cart} />
           </div>
         </div>
-        <div className="container header-sub">
-          <CategoryTabs categories={categories} />
-          <HeaderSearch />
-        </div>
       </header>
+      <CategoryTabs categories={categories} />
     </>
   );
 }
@@ -62,14 +51,9 @@ function TopBar() {
   return (
     <div className="topbar">
       <div className="container topbar-inner">
-        <span className="topbar-item">
-          <Icon name="truck" size={16} strokeWidth={2} />
-          Despacho a todo Chile
-        </span>
-        <span className="topbar-item">
-          <Icon name="headset" size={16} strokeWidth={2} />
-          Soporte técnico propio
-        </span>
+        {TOPBAR_ITEMS.map((item) => (
+          <span key={item}>{item}</span>
+        ))}
         <a
           className="topbar-whatsapp"
           href={STORE.whatsappUrl}
@@ -84,77 +68,69 @@ function TopBar() {
 }
 
 /**
- * Primary links ("Catálogo", "Contacto") from the Shopify header menu.
- * @param {{
- *   menu: HeaderProps['header']['menu'];
- *   primaryDomainUrl: string;
- *   publicStoreDomain: string;
- * }}
- */
-export function HeaderMenu({menu, primaryDomainUrl, publicStoreDomain}) {
-  const items = (menu?.items?.length ? menu.items : FALLBACK_HEADER_MENU.items)
-    .map((item) => ({
-      ...item,
-      url: toRelativeUrl(item.url, primaryDomainUrl, publicStoreDomain),
-    }))
-    // The logo already links home.
-    .filter((item) => item.url && item.url !== '/');
-
-  return (
-    <nav className="header-nav" aria-label="Principal">
-      {items.map((item) => (
-        <NavLink end key={item.id} prefetch="intent" to={item.url}>
-          {item.title}
-        </NavLink>
-      ))}
-    </nav>
-  );
-}
-
-/**
  * @param {{categories: import('~/lib/categories').Category[]}}
  */
 function CategoryTabs({categories}) {
   const {pathname} = useLocation();
-  const tabs = [{id: 'all', handle: 'all', title: 'Todos'}, ...categories];
+  const isActive = (/** @type {string} */ to) =>
+    pathname === to || pathname.endsWith(to);
+  const allActive = isActive('/collections/all');
+  const promoTo = `/collections/${PROMO_PILL.collectionHandle}`;
 
   return (
-    <nav className="category-tabs" aria-label="Categorías">
-      {tabs.map((tab) => {
-        const to = `/collections/${tab.handle}`;
-        const active = pathname.endsWith(to);
-        return (
-          <Link
-            aria-current={active ? 'page' : undefined}
-            className={`category-tab${active ? ' active' : ''}`}
-            key={tab.id}
-            prefetch="intent"
-            to={to}
-          >
-            {tab.title}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className="category-bar">
+      <nav className="container category-tabs" aria-label="Categorías">
+        <Link
+          aria-current={allActive ? 'page' : undefined}
+          className={`category-tab all${allActive ? ' active' : ''}`}
+          prefetch="intent"
+          to="/collections/all"
+        >
+          <Icon name="menu" size={18} strokeWidth={2.2} />
+          Todas las categorías
+        </Link>
+        {categories.map((category) => {
+          const to = `/collections/${category.handle}`;
+          const active = isActive(to);
+          return (
+            <Link
+              aria-current={active ? 'page' : undefined}
+              className={`category-tab${active ? ' active' : ''}`}
+              key={category.id}
+              prefetch="intent"
+              to={to}
+            >
+              {category.title}
+            </Link>
+          );
+        })}
+        <Link className="tag-offers" prefetch="intent" to={promoTo}>
+          {PROMO_PILL.label}
+        </Link>
+      </nav>
+    </div>
   );
 }
 
 function HeaderSearch() {
   const [searchParams] = useSearchParams();
   const {pathname} = useLocation();
-  const current = pathname.endsWith('/search') ? searchParams.get('q') : '';
+  const current = pathname.endsWith('/search')
+    ? normalizeSearchTerm(searchParams.get('q'))
+    : '';
 
   return (
     <Form method="get" action="/search" className="header-search" role="search">
-      <Icon name="search" size={17} />
       <input
-        aria-label="Buscar"
-        defaultValue={current ?? ''}
-        key={current ?? ''}
+        aria-label="Buscar productos"
+        defaultValue={current}
+        key={current}
+        maxLength={SEARCH_TERM_MAX_LENGTH}
         name="q"
-        placeholder="Buscar lectores, POS, impresoras…"
+        placeholder="Busca lectores, impresoras, POS…"
         type="search"
       />
+      <button type="submit">Buscar</button>
     </Form>
   );
 }
@@ -182,8 +158,7 @@ function CartBadge({count}) {
         });
       }}
     >
-      <Icon name="bag" size={19} />
-      <span>{count}</span>
+      Carrito <span>{count}</span>
     </a>
   );
 }
@@ -206,45 +181,6 @@ function CartBanner() {
   const cart = useOptimisticCart(originalCart);
   return <CartBadge count={cart?.totalQuantity ?? 0} />;
 }
-
-/**
- * Strips the shop's own domain from menu URLs so they route client-side.
- * @param {string | null | undefined} url
- * @param {string} primaryDomainUrl
- * @param {string} publicStoreDomain
- */
-export function toRelativeUrl(url, primaryDomainUrl, publicStoreDomain) {
-  if (!url) return null;
-  const isInternal =
-    url.includes('myshopify.com') ||
-    (publicStoreDomain && url.includes(publicStoreDomain)) ||
-    (primaryDomainUrl && url.includes(primaryDomainUrl));
-  return isInternal ? new URL(url).pathname : url;
-}
-
-const FALLBACK_HEADER_MENU = {
-  id: 'fallback-header-menu',
-  items: [
-    {
-      id: 'fallback-catalog',
-      resourceId: null,
-      tags: [],
-      title: 'Catálogo',
-      type: 'HTTP',
-      url: '/collections/all',
-      items: [],
-    },
-    {
-      id: 'fallback-contact',
-      resourceId: null,
-      tags: [],
-      title: 'Contacto',
-      type: 'HTTP',
-      url: STORE.contactPath,
-      items: [],
-    },
-  ],
-};
 
 /**
  * @typedef {Object} HeaderProps

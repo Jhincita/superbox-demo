@@ -202,25 +202,37 @@ export default function App() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  let errorMessage = 'Unknown error';
-  let errorStatus = 500;
+  const status = isRouteErrorResponse(error) ? error.status : 500;
+  const notFound = status === 404;
 
-  if (isRouteErrorResponse(error)) {
-    errorMessage = error?.data?.message ?? error.data;
-    errorStatus = error.status;
-  } else if (error instanceof Error) {
-    errorMessage = error.message;
+  // Details are only shown while developing. In production visitors get a
+  // generic message; the server logs the real error (entry.server.jsx).
+  let details = null;
+  if (import.meta.env.DEV) {
+    if (isRouteErrorResponse(error)) {
+      details = error.data?.message ?? String(error.data ?? '');
+    } else if (error instanceof Error) {
+      details = error.stack ?? error.message;
+    }
   }
 
   return (
-    <div className="route-error">
-      <h1>{errorStatus === 404 ? 'Página no encontrada' : 'Algo salió mal'}</h1>
-      <h2>{errorStatus}</h2>
-      {errorMessage && (
+    <div className="container route-error">
+      <h1>{notFound ? 'Página no encontrada' : 'Algo salió mal'}</h1>
+      <p className="route-error-status">Error {status}</p>
+      <p>
+        {notFound
+          ? 'La página que buscas no existe o fue movida.'
+          : 'Tuvimos un problema al cargar esta página. Inténtalo de nuevo en unos minutos.'}
+      </p>
+      <a className="btn-buy" href="/">
+        Volver al inicio
+      </a>
+      {details ? (
         <fieldset>
-          <pre>{errorMessage}</pre>
+          <pre>{details}</pre>
         </fieldset>
-      )}
+      ) : null}
     </div>
   );
 }

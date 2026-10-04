@@ -12,6 +12,7 @@ import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {PRODUCT_PERKS} from '~/lib/storeConfig';
+import {sanitizeHtml} from '~/lib/sanitizeHtml.server';
 
 /**
  * @type {Route.MetaFunction}
@@ -68,7 +69,7 @@ async function loadCriticalData({context, params, request}) {
   redirectIfHandleIsLocalized(request, {handle, data: product});
 
   return {
-    product,
+    product: {...product, descriptionHtml: sanitizeHtml(product.descriptionHtml)},
   };
 }
 
@@ -78,7 +79,7 @@ async function loadCriticalData({context, params, request}) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  * @param {Route.LoaderArgs}
  */
-function loadDeferredData({context, params}) {
+function loadDeferredData() {
   // Put any API calls that is not critical to be available on first page render
   // For example: product reviews, product recommendations, social feeds.
 

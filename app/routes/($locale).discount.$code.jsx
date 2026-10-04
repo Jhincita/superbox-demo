@@ -1,4 +1,5 @@
 import {redirect} from 'react-router';
+import {safeRedirectPath} from '~/lib/urls';
 
 /**
  * Automatically applies a discount found on the url
@@ -14,28 +15,32 @@ import {redirect} from 'react-router';
  */
 export async function loader({request, context, params}) {
   const {cart} = context;
-  const {code} = params;
+  const code = params.code?.trim().slice(0, 255);
 
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  let redirectParam =
-    searchParams.get('redirect') || searchParams.get('return_to') || '/';
-
-  if (redirectParam.includes('//')) {
-    // Avoid redirecting to external URLs to prevent phishing attacks
-    redirectParam = '/';
-  }
+  // Only same-origin relative paths are accepted, to prevent open redirects
+  // (e.g. `//evil.com`, `/\evil.com`, `https://evil.com`, `javascript:`).
+  const redirectPath = safeRedirectPath(
+    searchParams.get('redirect') || searchParams.get('return_to'),
+  );
 
   searchParams.delete('redirect');
   searchParams.delete('return_to');
 
-  const redirectUrl = `${redirectParam}?${searchParams}`;
+  const query = searchParams.toString();
+  const redirectUrl = query ? `${redirectPath}?${query}` : redirectPath;
 
   if (!code) {
     return redirect(redirectUrl);
   }
 
   const result = await cart.updateDiscountCodes([code]);
+  if (!result?.cart?.id) {
+    // Shopify rejected the update (e.g. unknown code); just continue.
+    if (result?.errors?.length) console.error(result.errors);
+    return redirect(redirectUrl);
+  }
   const headers = cart.setCartId(result.cart.id);
 
   // Using set-cookie on a 303 redirect will not work if the domain origin have port number (:3000)

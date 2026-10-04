@@ -4,6 +4,10 @@ import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchForm} from '~/components/SearchForm';
 import {SearchResults} from '~/components/SearchResults';
 import {getEmptyPredictiveSearchResult} from '~/lib/search';
+import {SEARCH_TERM_MAX_LENGTH, normalizeSearchTerm} from '~/lib/urls';
+
+/** Shown instead of raw Storefront API errors (those are logged server-side). */
+const SEARCH_ERROR = 'No pudimos completar la búsqueda. Inténtalo de nuevo.';
 
 /**
  * @type {Route.MetaFunction}
@@ -22,12 +26,15 @@ export async function loader({request, context}) {
     ? predictiveSearch({request, context})
     : regularSearch({request, context});
 
-  searchPromise.catch((error) => {
+  return await searchPromise.catch((error) => {
     console.error(error);
-    return {term: '', result: null, error: error.message};
+    return {
+      type: isPredictive ? 'predictive' : 'regular',
+      term: '',
+      result: null,
+      error: SEARCH_ERROR,
+    };
   });
-
-  return await searchPromise;
 }
 
 /**
@@ -48,6 +55,7 @@ export default function SearchPage() {
               aria-label="Buscar"
               className="input"
               defaultValue={term}
+              maxLength={SEARCH_TERM_MAX_LENGTH}
               name="q"
               placeholder="Buscar lectores, POS, impresoras…"
               ref={inputRef}
@@ -225,7 +233,11 @@ async function regularSearch({request, context}) {
   const {storefront} = context;
   const url = new URL(request.url);
   const variables = getPaginationVariables(request, {pageBy: 8});
-  const term = String(url.searchParams.get('q') || '');
+  const term = normalizeSearchTerm(url.searchParams.get('q'));
+
+  if (!term) {
+    return {type: 'regular', term, result: {total: 0, items: {}}};
+  }
 
   // Search articles, pages, and products for the `q` term
   const {errors, ...items} = await storefront.query(SEARCH_QUERY, {
@@ -241,9 +253,8 @@ async function regularSearch({request, context}) {
     0,
   );
 
-  const error = errors
-    ? errors.map(({message}) => message).join(', ')
-    : undefined;
+  if (errors) console.error(errors);
+  const error = errors ? SEARCH_ERROR : undefined;
 
   return {type: 'regular', term, error, result: {total, items}};
 }
@@ -384,8 +395,11 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
 async function predictiveSearch({request, context}) {
   const {storefront} = context;
   const url = new URL(request.url);
-  const term = String(url.searchParams.get('q') || '').trim();
-  const limit = Number(url.searchParams.get('limit') || 10);
+  const term = normalizeSearchTerm(url.searchParams.get('q'));
+  const requestedLimit = Number.parseInt(url.searchParams.get('limit') ?? '', 10);
+  const limit = Number.isInteger(requestedLimit)
+    ? Math.min(Math.max(requestedLimit, 1), 10)
+    : 10;
   const type = 'predictive';
 
   if (!term) return {type, term, result: getEmptyPredictiveSearchResult()};

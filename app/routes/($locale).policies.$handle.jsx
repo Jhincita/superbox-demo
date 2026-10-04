@@ -1,4 +1,5 @@
 import {Link, useLoaderData} from 'react-router';
+import {sanitizeHtml} from '~/lib/sanitizeHtml.server';
 
 /**
  * @type {Route.MetaFunction}
@@ -36,7 +37,7 @@ export async function loader({params, context}) {
     throw new Response('Could not find the policy', {status: 404});
   }
 
-  return {policy};
+  return {policy: {...policy, body: sanitizeHtml(policy.body)}};
 }
 
 export default function Policy() {
