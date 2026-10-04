@@ -1,6 +1,7 @@
 import {useLoaderData} from 'react-router';
 import {Image} from '@shopify/hydrogen';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {sanitizeHtml} from '~/lib/sanitizeHtml.server';
 
 /**
  * @type {Route.MetaFunction}
@@ -59,7 +60,9 @@ async function loadCriticalData({context, request, params}) {
 
   const article = blog.articleByHandle;
 
-  return {article};
+  return {
+    article: {...article, contentHtml: sanitizeHtml(article.contentHtml)},
+  };
 }
 
 /**
@@ -68,7 +71,7 @@ async function loadCriticalData({context, request, params}) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  * @param {Route.LoaderArgs}
  */
-function loadDeferredData({context}) {
+function loadDeferredData() {
   return {};
 }
 

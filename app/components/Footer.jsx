@@ -1,8 +1,9 @@
 import {Suspense, useEffect, useRef} from 'react';
 import {Await, Link, useFetcher} from 'react-router';
-import {toRelativeUrl} from '~/components/Header';
+import {Logo} from '~/components/Icon';
 import {getCategories} from '~/lib/categories';
 import {STORE} from '~/lib/storeConfig';
+import {toRelativeUrl} from '~/lib/urls';
 
 /**
  * @param {FooterProps}
@@ -18,7 +19,10 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
       <footer className="footer">
         <div className="container footer-grid">
           <div className="footer-about">
-            <span className="brand-name">{STORE.name}</span>
+            <Link className="footer-brand" prefetch="intent" to="/">
+              <Logo size={32} />
+              <span>{STORE.name}</span>
+            </Link>
             <p>{STORE.about}</p>
           </div>
           <nav className="footer-col" aria-label="Catálogo">
@@ -72,6 +76,11 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
               </Await>
             </Suspense>
           </nav>
+          <div className="footer-col">
+            <h6>Newsletter</h6>
+            <p>Ofertas antes que nadie.</p>
+            <a href="#newsletter">Suscríbete</a>
+          </div>
         </div>
         <div className="container footer-bottom">
           <span>
@@ -102,8 +111,8 @@ function Newsletter() {
         : fetcher.data?.error ?? '';
 
   return (
-    <section className="newsletter">
-      <div className="container newsletter-inner">
+    <section className="container newsletter" id="newsletter">
+      <div className="newsletter-inner">
         <div>
           <h2>Las ofertas, primero para ti.</h2>
           <p>
@@ -115,6 +124,8 @@ function Newsletter() {
           <div className="newsletter-field">
             <input
               aria-label="Correo electrónico"
+              autoComplete="email"
+              maxLength={254}
               name="email"
               placeholder="Tu correo electrónico"
               required
@@ -123,6 +134,13 @@ function Newsletter() {
             <button type="submit" disabled={fetcher.state !== 'idle'}>
               Suscribirme
             </button>
+          </div>
+          {/* Honeypot: hidden from people, filled by naive bots. */}
+          <div className="newsletter-hp" aria-hidden="true">
+            <label>
+              No completar
+              <input autoComplete="off" name="company" tabIndex={-1} type="text" />
+            </label>
           </div>
           <span className="newsletter-msg" role="status">
             {message}

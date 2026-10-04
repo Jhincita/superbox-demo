@@ -3,14 +3,15 @@ import {Image} from '@shopify/hydrogen';
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {useAside} from '~/components/Aside';
 import {Icon} from '~/components/Icon';
-import {ProductPrice} from '~/components/ProductPrice';
+import {discountPercent, formatMoney} from '~/lib/format';
 import {useVariantUrl} from '~/lib/variants';
 import {DESIGN, STORE} from '~/lib/storeConfig';
 
 /**
- * Product card from the design: white tile, "Brand · Type" kicker, title,
- * price and a quick-add button. Products with several variants link to the
- * product page instead of adding a default variant.
+ * Theme 1a product card: image well with a discount badge, vendor kicker,
+ * 2-line title, price block and a lime quick-add button. Products with
+ * several variants link to the product page instead of adding a default
+ * variant.
  * @param {{
  *   product: ProductCardFragment;
  *   loading?: 'eager' | 'lazy';
@@ -25,9 +26,9 @@ export function ProductItem({product, loading, to}) {
   const variants = product.variants?.nodes ?? [];
   const soldOut = !product.availableForSale;
   const singleVariant = variants.length === 1 ? variants[0] : null;
-  const kicker = [product.vendor, product.productType]
-    .filter(Boolean)
-    .join(' · ');
+  const price = product.priceRange.minVariantPrice;
+  const compareAt = product.compareAtPriceRange?.minVariantPrice;
+  const discount = discountPercent(price, compareAt);
 
   return (
     <article className="product-card">
@@ -44,22 +45,34 @@ export function ProductItem({product, loading, to}) {
             className={DESIGN.grayscalePhotos ? 'grayscale' : undefined}
             data={image}
             loading={loading}
-            sizes="(min-width: 64em) 300px, (min-width: 40em) 33vw, 50vw"
+            sizes="(min-width: 64em) 300px, (min-width: 45em) 33vw, 50vw"
           />
         )}
-        {soldOut && <span className="badge-soldout">Agotado</span>}
+        {soldOut ? (
+          <span className="badge-soldout">Agotado</span>
+        ) : discount ? (
+          <span className="badge-off">-{discount}%</span>
+        ) : null}
       </Link>
-      <div className="product-card-body">
-        {kicker && <span className="kicker">{kicker}</span>}
-        <Link className="product-card-title" prefetch="intent" to={variantUrl}>
-          {product.title}
-        </Link>
-      </div>
+      {product.vendor && <span className="kicker">{product.vendor}</span>}
+      <Link className="product-card-title" prefetch="intent" to={variantUrl}>
+        {product.title}
+      </Link>
       <div className="product-card-foot">
-        <ProductPrice
-          price={product.priceRange.minVariantPrice}
-          compareAtPrice={product.compareAtPriceRange?.minVariantPrice}
-        />
+        <div className="product-card-prices">
+          {discount ? (
+            <s className="price-old">
+              <span className="sr-only">Antes </span>
+              {formatMoney(compareAt)}
+            </s>
+          ) : null}
+          {Number(price.amount) > 0 && (
+            <span className="price">
+              {discount ? <span className="sr-only">Ahora </span> : null}
+              {formatMoney(price)}
+            </span>
+          )}
+        </div>
         {soldOut ? (
           <a
             className="notify-link"
@@ -71,12 +84,12 @@ export function ProductItem({product, loading, to}) {
           </a>
         ) : singleVariant?.availableForSale ? (
           <AddToCartButton
-            ariaLabel="Agregar al carrito"
+            ariaLabel={`Agregar ${product.title} al carrito`}
             className="quick-add"
             lines={[{merchandiseId: singleVariant.id, quantity: 1}]}
             onClick={() => open('cart')}
           >
-            <Icon name="plus" size={18} strokeWidth={2.2} />
+            <Icon name="plus" size={20} strokeWidth={2.4} />
           </AddToCartButton>
         ) : (
           <Link
@@ -89,6 +102,9 @@ export function ProductItem({product, loading, to}) {
           </Link>
         )}
       </div>
+      {product.availableForSale && (
+        <span className="ship-line">● Despacho en 24–48 h</span>
+      )}
     </article>
   );
 }

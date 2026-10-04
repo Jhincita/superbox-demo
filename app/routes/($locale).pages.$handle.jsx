@@ -1,5 +1,6 @@
 import {useLoaderData} from 'react-router';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {sanitizeHtml} from '~/lib/sanitizeHtml.server';
 
 /**
  * @type {Route.MetaFunction}
@@ -47,7 +48,7 @@ async function loadCriticalData({context, request, params}) {
   redirectIfHandleIsLocalized(request, {handle: params.handle, data: page});
 
   return {
-    page,
+    page: {...page, body: sanitizeHtml(page.body)},
   };
 }
 
@@ -57,7 +58,7 @@ async function loadCriticalData({context, request, params}) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  * @param {Route.LoaderArgs}
  */
-function loadDeferredData({context}) {
+function loadDeferredData() {
   return {};
 }
 

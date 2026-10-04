@@ -1,7 +1,7 @@
 /**
  * Store-level copy and settings for the Superbox storefront design.
  * Everything here is static content that isn't modelled in Shopify
- * (contact details, hero copy, value props). Product, collection and
+ * (contact details, hero copy, promo tiles). Product, collection and
  * menu data still come from the Storefront API.
  */
 export const STORE = {
@@ -26,30 +26,60 @@ export const CATEGORY_MENU_HANDLE = 'categorias';
 export const HIDDEN_COLLECTION_HANDLES = ['frontpage', 'all'];
 
 export const HERO = {
-  kicker: 'Equipamiento para retail',
-  title: 'Todo el equipo para armar',
-  titleAccent: 'tu negocio.',
-  text: 'Lectores de código, terminales POS, impresoras y periféricos para el comercio chileno. Precios directos y soporte técnico de nuestro propio equipo.',
+  /** Shown when there is no hero product (title + "Ver catálogo" CTA). */
+  title: 'Todo el equipo para tu negocio',
+  /** One sentence. Used when the product has no `custom.tagline` metafield. */
+  text: 'Caja completa en un solo equipo: pantalla táctil de 15", sin ventilador y lista para vender desde el primer día.',
+  /** Exactly 3 chips. Used when the product has no `custom.hero_specs` metafield. */
+  specs: ['Intel J6412', '128 GB SSD', 'Fanless'],
+  /**
+   * Optional line break in the product title: text before this marker goes
+   * on the first line (e.g. 'BarPOS' → "BarPOS<br>All-in-One E200").
+   * @type {string | null}
+   */
+  titleBreakAfter: null,
   /** Product highlighted in the hero card. Falls back to the first best seller. */
   productHandle: 'all-in-one-con-impresora-integrada-barpos-d1a',
 };
 
-export const VALUE_PROPS = [
-  {icon: 'truck', title: 'Despacho nacional', text: 'Enviamos a todo Chile.'},
+/** Topbar copy (replaces the old value-props band on the homepage). */
+export const TOPBAR_ITEMS = [
+  'Envío a todo Chile',
+  'Factura electrónica',
+  'Soporte técnico incluido',
+];
+
+/**
+ * Lime pill at the right end of the category bar. Change it monthly.
+ * `collectionHandle` is the sale collection it links to.
+ */
+export const PROMO_PILL = {
+  label: 'OFERTAS DE OCTUBRE',
+  collectionHandle: 'ofertas',
+};
+
+/**
+ * The two promo tiles next to the hero card. The image comes from the
+ * collection's Shopify `image` field. When `kicker` is null and the tile is
+ * marked `fromPrice`, the kicker is computed from the collection's lowest
+ * product price ("DESDE $24.990").
+ */
+export const PROMO_TILES = [
   {
-    icon: 'headset',
-    title: 'Soporte técnico',
-    text: 'Configuración y ayuda post venta.',
+    collectionHandle: 'lectores-de-codigo',
+    title: 'Lectores de código',
+    kicker: null,
+    fromPrice: true,
+    fallbackKicker: 'DESDE $24.990',
+    tone: 'olive',
   },
   {
-    icon: 'shield',
-    title: 'Compra segura',
-    text: 'Pago protegido, IVA incluido.',
-  },
-  {
-    icon: 'chat',
-    title: 'Asesoría directa',
-    text: 'Te ayudamos a elegir por WhatsApp.',
+    collectionHandle: 'impresoras-termicas',
+    title: 'Impresoras térmicas',
+    kicker: '3 CUOTAS SIN INTERÉS',
+    fromPrice: false,
+    fallbackKicker: '3 CUOTAS SIN INTERÉS',
+    tone: 'orange',
   },
 ];
 
@@ -63,11 +93,11 @@ export const PRODUCT_PERKS = [
 export const PRICE_FILTER = {min: 10000, max: 1100000, step: 10000};
 
 /**
- * Design toggles from the Claude Design file:
- * - grayscalePhotos: render product photos in black & white ("fotosColor" off)
+ * Design toggles:
+ * - grayscalePhotos: render product photos in black & white (Theme 1a: off)
  * - compactGrid: 190px minimum card width instead of 240px ("densidad")
  */
 export const DESIGN = {
-  grayscalePhotos: true,
+  grayscalePhotos: false,
   compactGrid: false,
 };

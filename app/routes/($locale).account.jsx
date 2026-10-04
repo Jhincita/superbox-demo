@@ -30,7 +30,7 @@ export async function loader({context}) {
     {customer: data.customer},
     {
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'private, no-store',
       },
     },
   );

@@ -1,5 +1,8 @@
 import {redirect} from 'react-router';
 
+/** Upper bound on lines accepted from a cart permalink. */
+const MAX_LINES = 50;
+
 /**
  * Automatically creates a new cart based on the URL and redirects straight to checkout.
  * Expected URL structure:
@@ -23,21 +26,28 @@ export async function loader({request, context, params}) {
   const {cart} = context;
   const {lines} = params;
   if (!lines) return redirect('/cart');
-  const linesMap = lines.split(',').map((line) => {
-    const lineDetails = line.split(':');
-    const variantId = lineDetails[0];
-    const quantity = parseInt(lineDetails[1], 10);
+  const linesMap = lines
+    .split(',')
+    .slice(0, MAX_LINES)
+    .map((line) => {
+      const [variantId, rawQuantity] = line.split(':');
+      const quantity = Number.parseInt(rawQuantity ?? '1', 10);
+      if (!/^\d{1,20}$/.test(variantId ?? '')) return null;
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+        return null;
+      }
+      return {
+        merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+        quantity,
+      };
+    });
 
-    return {
-      merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
-      quantity,
-    };
-  });
+  if (!linesMap.length || linesMap.some((line) => line === null)) {
+    throw new Response('Invalid cart link', {status: 400});
+  }
 
   const url = new URL(request.url);
-  const searchParams = new URLSearchParams(url.search);
-
-  const discount = searchParams.get('discount');
+  const discount = url.searchParams.get('discount')?.trim().slice(0, 255);
   const discountArray = discount ? [discount] : [];
 
   // create a cart

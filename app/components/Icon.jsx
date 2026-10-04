@@ -133,6 +133,7 @@ const ICONS = {
   moon: {body: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />},
   close: {body: <path d="M6 6l12 12M18 6L6 18" />},
   plus: {body: <path d="M12 5v14M5 12h14" />},
+  menu: {body: <path d="M4 7h16M4 12h16M4 17h16" />},
   minus: {body: <path d="M5 12h14" />},
   arrow: {body: <path d="M4 12h15M13 6l6 6-6 6" />},
 };
@@ -143,10 +144,18 @@ const ICONS = {
  *   size?: number;
  *   strokeWidth?: number;
  *   className?: string;
+ *   mono?: boolean;
  *   style?: React.CSSProperties;
  * }}
  */
-export function Icon({name, size = 20, strokeWidth = 1.9, className, style}) {
+export function Icon({
+  name,
+  size = 20,
+  strokeWidth = 1.9,
+  className,
+  mono = false,
+  style,
+}) {
   const icon = ICONS[name];
   if (!icon) return null;
   return (
@@ -155,7 +164,7 @@ export function Icon({name, size = 20, strokeWidth = 1.9, className, style}) {
       className={className}
       fill="none"
       height={size}
-      stroke={icon.accent ? 'var(--color-accent)' : 'currentColor'}
+      stroke={icon.accent && !mono ? 'var(--color-accent)' : 'currentColor'}
       strokeLinecap={icon.round ? 'round' : 'square'}
       strokeWidth={strokeWidth}
       style={style}
@@ -184,23 +193,39 @@ export function categoryIcon(key) {
   return 'box';
 }
 
-export function Logo({size = 30}) {
+const LOGO_PALETTES = {
+  default: {light: '#E8955C', mid: '#D2733A', dark: '#B35C2B', inner: '#7E3E1C'},
+  onOrange: {light: '#FFFFFF', mid: '#FBE7D8', dark: '#F0C8A9', inner: '#8C4520'},
+};
+
+/**
+ * Symmetric isometric open box. `gap` (the stroke between panels) must match
+ * the background behind the logo; containers set it through `--logo-gap`.
+ * @param {{
+ *   size?: number;
+ *   variant?: keyof typeof LOGO_PALETTES;
+ *   gap?: string;
+ * }}
+ */
+export function Logo({size = 42, variant = 'default', gap = 'var(--logo-gap, #fff)'}) {
+  const c = LOGO_PALETTES[variant] ?? LOGO_PALETTES.default;
   return (
-    <svg aria-hidden="true" height={size} viewBox="0 0 30 30" width={size}>
-      <rect fill="var(--color-accent)" height="30" width="30" />
-      <path
-        d="M7 11l8-4 8 4v9l-8 4-8-4z"
-        fill="none"
-        stroke="#1b1411"
-        strokeLinejoin="miter"
-        strokeWidth="2.2"
-      />
-      <path
-        d="M7 11l8 4 8-4M15 15v9"
-        fill="none"
-        stroke="#1b1411"
-        strokeWidth="2.2"
-      />
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      height={size}
+      viewBox="0 8 100 92"
+      width={size}
+    >
+      <g stroke={gap} strokeLinejoin="round" strokeWidth="3.5">
+        <polygon fill={c.inner} points="50,30 14,48 50,66 86,48" />
+        <polygon fill={c.light} points="14,48 50,30 42,12 6,30" />
+        <polygon fill={c.mid} points="50,30 86,48 94,30 58,12" />
+        <polygon fill={c.mid} points="14,48 50,66 50,96 14,78" />
+        <polygon fill={c.dark} points="50,66 86,48 86,78 50,96" />
+        <polygon fill={c.light} points="14,48 50,66 40,78 4,60" />
+        <polygon fill={c.light} points="50,66 86,48 96,60 60,78" />
+      </g>
     </svg>
   );
 }

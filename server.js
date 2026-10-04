@@ -1,6 +1,10 @@
 import * as serverBuild from 'virtual:react-router/server-build';
 import {createRequestHandler, storefrontRedirect} from '@shopify/hydrogen';
 import {createHydrogenRouterContext} from '~/lib/context';
+import {applySecurityHeaders} from '~/lib/security';
+
+/** Customer account pages and their `.data` requests, with or without a locale prefix. */
+const ACCOUNT_PATH = /^(?:\/[a-z]{2}-[a-z]{2})?\/account(?:[/._]|$)/i;
 
 /**
  * Export a fetch handler in module format.
@@ -30,7 +34,7 @@ export default {
         getLoadContext: () => hydrogenContext,
       });
 
-      const response = await handleRequest(request);
+      let response = await handleRequest(request);
 
       if (hydrogenContext.session.isPending) {
         response.headers.set(
@@ -45,17 +49,45 @@ export default {
          * If the redirect doesn't exist, then `storefrontRedirect`
          * will pass through the 404 response.
          */
-        return storefrontRedirect({
+        response = await storefrontRedirect({
           request,
           response,
           storefront: hydrogenContext.storefront,
         });
       }
 
-      return response;
+      return secure(request, response);
     } catch (error) {
+      // Details stay in the server log; the client only gets a generic 500.
       console.error(error);
-      return new Response('An unexpected error occurred', {status: 500});
+      return secure(
+        request,
+        new Response('An unexpected error occurred', {
+          status: 500,
+          headers: {'Content-Type': 'text/plain; charset=utf-8'},
+        }),
+      );
     }
   },
 };
+
+/**
+ * Adds the security headers (and `private, no-store` on account routes) to
+ * any response, including redirects and non-HTML resources.
+ * @param {Request} request
+ * @param {Response} response
+ */
+function secure(request, response) {
+  let secured = response;
+  try {
+    applySecurityHeaders(secured.headers);
+  } catch {
+    // Some responses (e.g. from fetch) have immutable headers; copy them.
+    secured = new Response(response.body, response);
+    applySecurityHeaders(secured.headers);
+  }
+  if (ACCOUNT_PATH.test(new URL(request.url).pathname)) {
+    secured.headers.set('Cache-Control', 'private, no-store');
+  }
+  return secured;
+}
