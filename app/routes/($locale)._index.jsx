@@ -3,15 +3,22 @@ import {Suspense} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {MockShopNotice} from '~/components/MockShopNotice';
-import {Icon, categoryIcon} from '~/components/Icon';
-import {getCategories} from '~/lib/categories';
+import {categoryCode, getCategories} from '~/lib/categories';
 import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
 import {discountPercent, formatMoney} from '~/lib/format';
 import {HERO, PROMO_TILES} from '~/lib/storeConfig';
 import heroFallbackImage from '~/assets/images/hero-barpos-d1a.png';
+import promoLectoresImage from '~/assets/images/promo-lectores.jpg';
+import promoImpresorasImage from '~/assets/images/promo-impresoras.jpg';
 
 /** Products shown in "Lo más vendido". */
 const FEATURED_COUNT = 4;
+
+/** Bundled promo tile photos, keyed by PROMO_TILES[].fallbackImage. */
+const PROMO_FALLBACK_IMAGES = {
+  lectores: promoLectoresImage,
+  impresoras: promoImpresorasImage,
+};
 
 /**
  * @type {Route.MetaFunction}
@@ -127,6 +134,7 @@ function toPromoTile(tile, collection) {
     kicker: tile.kicker ?? computed ?? tile.fallbackKicker,
     tone: tile.tone,
     image: collection?.image ?? null,
+    fallbackImage: PROMO_FALLBACK_IMAGES[tile.fallbackImage] ?? null,
   };
 }
 
@@ -274,15 +282,39 @@ function Hero({hero}) {
 function HeroTitle({title}) {
   const marker = HERO.titleBreakAfter;
   if (!marker || !title.startsWith(marker) || title.length === marker.length) {
-    return title;
+    return keepHyphenatedWords(title);
   }
   return (
     <>
       {marker}
       <br />
-      {title.slice(marker.length).trim()}
+      {keepHyphenatedWords(title.slice(marker.length).trim())}
     </>
   );
+}
+
+/**
+ * Keeps short hyphenated words ("All-in-One") on one line, so the large hero
+ * title wraps between words like the design instead of at a hyphen. Longer
+ * ones may still break, so they can't overflow the card on small phones.
+ * @param {string} text
+ */
+function keepHyphenatedWords(text) {
+  /** @type {React.ReactNode[]} */
+  const parts = [];
+  let last = 0;
+  for (const match of text.matchAll(/\S+-\S+/g)) {
+    if (match[0].length > 14) continue;
+    parts.push(
+      text.slice(last, match.index),
+      <span className="nowrap" key={match.index}>
+        {match[0]}
+      </span>,
+    );
+    last = match.index + match[0].length;
+  }
+  parts.push(text.slice(last));
+  return parts;
 }
 
 /**
@@ -298,14 +330,22 @@ function PromoStack({tiles}) {
           prefetch="intent"
           to={tile.to}
         >
-          {tile.image && (
+          {tile.image ? (
             <Image
               alt=""
               data={tile.image}
               loading="eager"
-              sizes="(min-width: 1080px) 420px, 100vw"
+              sizes="(min-width: 1081px) 400px, (min-width: 601px) 50vw, 100vw"
             />
-          )}
+          ) : tile.fallbackImage ? (
+            <img
+              alt=""
+              height={500}
+              loading="eager"
+              src={tile.fallbackImage}
+              width={500}
+            />
+          ) : null}
           <div>
             <span className="promo-kicker">{tile.kicker}</span>
             <span className="promo-title">{tile.title}</span>
@@ -330,13 +370,8 @@ function CategoryGrid({categories}) {
             prefetch="intent"
             to={`/collections/${category.handle}`}
           >
-            <span className="category-icon">
-              <Icon
-                mono
-                name={categoryIcon(`${category.handle} ${category.title}`)}
-                size={26}
-                strokeWidth={1.8}
-              />
+            <span className="category-code" aria-hidden="true">
+              {categoryCode(category)}
             </span>
             <span>
               <strong>{category.title}</strong>

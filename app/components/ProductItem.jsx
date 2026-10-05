@@ -103,7 +103,7 @@ export function ProductItem({product, loading, to}) {
         )}
       </div>
       {product.availableForSale && (
-        <span className="ship-line">● Despacho en 24–48 h</span>
+        <span className="ship-line">{'● Despacho en 24–48\u00a0h'}</span>
       )}
     </article>
   );

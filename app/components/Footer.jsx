@@ -15,7 +15,6 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
 
   return (
     <>
-      <Newsletter />
       <footer className="footer">
         <div className="container footer-grid">
           <div className="footer-about">
@@ -76,11 +75,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
               </Await>
             </Suspense>
           </nav>
-          <div className="footer-col">
-            <h6>Newsletter</h6>
-            <p>Ofertas antes que nadie.</p>
-            <a href="#newsletter">Suscríbete</a>
-          </div>
+          <Newsletter />
         </div>
         <div className="container footer-bottom">
           <span>
@@ -111,42 +106,39 @@ function Newsletter() {
         : fetcher.data?.error ?? '';
 
   return (
-    <section className="container newsletter" id="newsletter">
-      <div className="newsletter-inner">
-        <div>
-          <h2>Las ofertas, primero para ti.</h2>
-          <p>
-            Suscríbete y mantente informado de todas nuestras ofertas y nuevos
-            equipos.
-          </p>
+    <section
+      aria-labelledby="newsletter-title"
+      className="footer-col newsletter"
+      id="newsletter"
+    >
+      <h6 id="newsletter-title">Newsletter</h6>
+      <p>Ofertas antes que nadie.</p>
+      <fetcher.Form method="post" action="/newsletter" ref={formRef}>
+        <div className="newsletter-field">
+          <input
+            aria-label="Correo electrónico"
+            autoComplete="email"
+            maxLength={254}
+            name="email"
+            placeholder="Tu correo"
+            required
+            type="email"
+          />
+          <button type="submit" disabled={fetcher.state !== 'idle'}>
+            Suscribirme
+          </button>
         </div>
-        <fetcher.Form method="post" action="/newsletter" ref={formRef}>
-          <div className="newsletter-field">
-            <input
-              aria-label="Correo electrónico"
-              autoComplete="email"
-              maxLength={254}
-              name="email"
-              placeholder="Tu correo electrónico"
-              required
-              type="email"
-            />
-            <button type="submit" disabled={fetcher.state !== 'idle'}>
-              Suscribirme
-            </button>
-          </div>
-          {/* Honeypot: hidden from people, filled by naive bots. */}
-          <div className="newsletter-hp" aria-hidden="true">
-            <label>
-              No completar
-              <input autoComplete="off" name="company" tabIndex={-1} type="text" />
-            </label>
-          </div>
-          <span className="newsletter-msg" role="status">
-            {message}
-          </span>
-        </fetcher.Form>
-      </div>
+        {/* Honeypot: hidden from people, filled by naive bots. */}
+        <div className="newsletter-hp" aria-hidden="true">
+          <label>
+            No completar
+            <input autoComplete="off" name="company" tabIndex={-1} type="text" />
+          </label>
+        </div>
+        <span className="newsletter-msg" role="status">
+          {message}
+        </span>
+      </fetcher.Form>
     </section>
   );
 }

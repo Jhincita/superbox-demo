@@ -11,8 +11,7 @@ export const STORE = {
   supportUrl: 'https://soporte.doblei.cl/',
   contactPath: '/pages/contact',
   location: 'Santiago, Chile',
-  about:
-    'Somos Superbox, empresa especializada en comercializar productos para el retail. Te invitamos a conocer nuestro catálogo con los mejores precios del mercado.',
+  about: 'Productos para el retail con los mejores precios del mercado.',
 };
 
 /**
@@ -45,8 +44,21 @@ export const HERO = {
 /** Topbar copy (replaces the old value-props band on the homepage). */
 export const TOPBAR_ITEMS = [
   'Envío a todo Chile',
-  'Factura electrónica',
+  'Factura para empresas',
   'Soporte técnico incluido',
+];
+
+/**
+ * Short codes shown in the home category badges ("LC", "POS", …). Each
+ * entry matches a keyword in the category handle or title (accents
+ * removed); categories without a match use the first 3 letters of the title.
+ */
+export const CATEGORY_CODES = [
+  {match: /lector|scanner|escaner|codigo/, code: 'LC'},
+  {match: /\bpos\b|terminal|caja/, code: 'POS'},
+  {match: /biometr|huella|reloj/, code: 'BIO'},
+  {match: /impres|printer|etiquet/, code: 'IMP'},
+  {match: /perif|accesor|cable/, code: 'PER'},
 ];
 
 /**
@@ -60,9 +72,10 @@ export const PROMO_PILL = {
 
 /**
  * The two promo tiles next to the hero card. The image comes from the
- * collection's Shopify `image` field. When `kicker` is null and the tile is
- * marked `fromPrice`, the kicker is computed from the collection's lowest
- * product price ("DESDE $24.990").
+ * collection's Shopify `image` field; `fallbackImage` (the design's photo,
+ * bundled in app/assets/images) is used when the collection has none. When
+ * `kicker` is null and the tile is marked `fromPrice`, the kicker is computed
+ * from the collection's lowest product price ("DESDE $24.990").
  */
 export const PROMO_TILES = [
   {
@@ -71,6 +84,7 @@ export const PROMO_TILES = [
     kicker: null,
     fromPrice: true,
     fallbackKicker: 'DESDE $24.990',
+    fallbackImage: 'lectores',
     tone: 'olive',
   },
   {
@@ -79,6 +93,7 @@ export const PROMO_TILES = [
     kicker: '3 CUOTAS SIN INTERÉS',
     fromPrice: false,
     fallbackKicker: '3 CUOTAS SIN INTERÉS',
+    fallbackImage: 'impresoras',
     tone: 'orange',
   },
 ];

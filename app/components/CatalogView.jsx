@@ -6,6 +6,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router';
+import {Icon} from '~/components/Icon';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
 import {getCategories} from '~/lib/categories';
@@ -43,6 +44,7 @@ export function CatalogView({title, description, activeHandle, products}) {
   const navigate = useNavigate();
   const state = parseCatalogParams(searchParams);
   const hasFilters = state.inStock || state.maxPrice !== null;
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   /**
    * @param {Record<string, string | null>} changes
@@ -120,7 +122,23 @@ export function CatalogView({title, description, activeHandle, products}) {
       </div>
 
       <div className="catalog-body">
-        <aside className="catalog-filters" aria-label="Filtros">
+        {/* Shown on tablets and phones only, where filters start collapsed. */}
+        <button
+          aria-controls="catalog-filters"
+          aria-expanded={filtersOpen}
+          className="btn btn-secondary catalog-filters-toggle"
+          onClick={() => setFiltersOpen((open) => !open)}
+          type="button"
+        >
+          <Icon name={filtersOpen ? 'close' : 'menu'} size={18} />
+          {filtersOpen ? 'Ocultar filtros' : 'Filtros'}
+        </button>
+        <aside
+          aria-label="Filtros"
+          className="catalog-filters"
+          data-open={filtersOpen}
+          id="catalog-filters"
+        >
           <div className="filter-group">
             <h6>Categoría</h6>
             {[{id: 'all', handle: 'all', title: 'Todos'}, ...categories].map(
