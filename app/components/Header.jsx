@@ -35,8 +35,9 @@ export function Header({header, cart}) {
           <HeaderSearch />
           <div className="header-actions">
             <ThemeToggle />
-            <Link prefetch="intent" to="/account">
-              Ingresar
+            <Link className="header-action" prefetch="intent" to="/account">
+              <Icon className="header-icon" name="user" size={22} />
+              <span className="header-label">Ingresar</span>
             </Link>
             <CartToggle cart={cart} />
           </div>
@@ -50,18 +51,22 @@ export function Header({header, cart}) {
 function TopBar() {
   return (
     <div className="topbar">
-      <div className="container topbar-inner">
+      <div className="container topbar-inner" role="list">
         {TOPBAR_ITEMS.map((item) => (
-          <span key={item}>{item}</span>
+          <span key={item} role="listitem">
+            {item}
+          </span>
         ))}
-        <a
-          className="topbar-whatsapp"
-          href={STORE.whatsappUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          WhatsApp {STORE.whatsappNumber}
-        </a>
+        <span role="listitem">
+          <a
+            className="topbar-whatsapp"
+            href={STORE.whatsappUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            WhatsApp {STORE.whatsappNumber}
+          </a>
+        </span>
       </div>
     </div>
   );
@@ -145,7 +150,7 @@ function CartBadge({count}) {
   return (
     <a
       aria-label={`Carrito (${count})`}
-      className="cart-button"
+      className="header-action cart-button"
       href="/cart"
       onClick={(e) => {
         e.preventDefault();
@@ -158,7 +163,9 @@ function CartBadge({count}) {
         });
       }}
     >
-      Carrito <span>{count}</span>
+      <Icon className="header-icon" name="bag" size={22} />
+      <span className="header-label">Carrito</span>
+      <span className="cart-count">{count}</span>
     </a>
   );
 }

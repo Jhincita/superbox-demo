@@ -176,23 +176,6 @@ export function Icon({
   );
 }
 
-/**
- * Picks a category icon from a collection's handle or title.
- * @param {string} key
- */
-export function categoryIcon(key) {
-  const k = key
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-  if (/lector|scanner|escaner|capturador|codigo/.test(k)) return 'scanner';
-  if (/pos|terminal|caja/.test(k)) return 'pos';
-  if (/biometr|huella|reloj/.test(k)) return 'fingerprint';
-  if (/impres|printer|etiquet/.test(k)) return 'printer';
-  if (/perif|accesor|cable|base|cuna/.test(k)) return 'plug';
-  return 'box';
-}
-
 const LOGO_PALETTES = {
   default: {light: '#E8955C', mid: '#D2733A', dark: '#B35C2B', inner: '#7E3E1C'},
   onOrange: {light: '#FFFFFF', mid: '#FBE7D8', dark: '#F0C8A9', inner: '#8C4520'},

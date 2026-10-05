@@ -1,6 +1,20 @@
-# Security hardening — Theme 1a (redesign_ver2 §8)
+# Security hardening — Theme 1a (redesign_ver2 §8) + Theme v3 pass
 
 This file records the status of each item in `redesign_ver2/README.md` §8: what changed, where, and how to verify it.
+
+## Theme v3 security pass (branch `themev3`)
+
+The v3 reskin re-ran the whole checklist below and the dependency audit:
+
+| Area | Change | Files |
+|---|---|---|
+| Dev-dependency CVEs | `undici` 7.24.0 → **7.30.0** (mini-oxygen) and 5.29.0 → **6.29.0** (miniflare), which clears 25 advisories incl. request smuggling, CRLF/header injection and decompression DoS. The bump also removes `@fastify/busboy` 2.x (GHSA-x8mw-p69m-v3mx). `youch` → `cookie` **0.7.2** (GHSA-pxg6-pf52-xh8x). Pinned through `overrides`; the local dev server was re-tested on the new versions. | `package.json`, `package-lock.json` |
+| Newsletter body size | Requests without a positive `Content-Length` (e.g. chunked) are now rejected with 413 like oversized ones, so `formData()` never buffers an unbounded body. | `app/routes/($locale).newsletter.jsx` |
+| Rate limiter memory | The in-memory fallback store is capped at 5,000 keys (oldest evicted first), so a flood of distinct keys can't grow the isolate's memory. | `app/lib/rateLimit.js` |
+| New assets | The two promo-tile photos from the design are bundled locally (`'self'`, no CSP change) with EXIF metadata stripped. | `app/assets/images/promo-*.jpg` |
+| Unchanged surface | No new `dangerouslySetInnerHTML`, no new external domains, no new `target="_blank"` links; the footer newsletter keeps the honeypot, CSRF check, rate limit and non-enumerating response. | — |
+
+`npm audit --omit=dev`: **0 vulnerabilities**. Full `npm audit`: 10 findings, all from one advisory (`braces` ≤ 3.0.3, GHSA-vfj7-8cjw-p6xm) with **no patched release**; see §11.
 
 **Status legend:** ✅ done · ⚠️ done, with a documented deviation
 
@@ -17,7 +31,7 @@ Run the verification commands against a local preview (`npm run build && npx sho
 - Scripts are controlled by `default-src` + nonce. There is no `'unsafe-inline'` or `'unsafe-eval'` for scripts.
 - Fonts are self-hosted (`app/assets/fonts`, Archivo variable 100–900). The stylesheet has no `@import`, no Google Fonts and no third-party CDN.
 - **Deviation:** `style-src` still contains `'unsafe-inline'`. Hydrogen always adds it to its default `style-src`, and it can't be removed through the API. The storefront also needs it: Hydrogen's `<Image>` renders `style="width:100%;aspect-ratio:…"`, and option swatches use an inline `background-color` that comes from data. Only styles are affected; script injection is still blocked by the nonce. Removing it would require replacing `<Image>`, so it is left as is.
-- No images outside Shopify are referenced. Product, collection and hero images come from `cdn.shopify.com`. The only local fallback is `app/assets/images/hero-barpos-d1a.png`, served from `'self'`.
+- No images outside Shopify are referenced. Product, collection and hero images come from `cdn.shopify.com`. The local fallbacks (`app/assets/images/hero-barpos-d1a.png` and the v3 promo photos `promo-lectores.jpg` / `promo-impresoras.jpg`) are served from `'self'`.
 
 **Verify:** `curl -sI https://<store>/ | grep -i content-security-policy`
 
@@ -114,8 +128,9 @@ The cookie settings are `httpOnly: true`, `secure` (always in production and on 
 **Files:** `app/routes/($locale).newsletter.jsx`, `app/lib/rateLimit.js`, `app/lib/security.js` (`isSameOriginRequest`), `app/components/Footer.jsx`
 
 - **Honeypot:** a `company` field is placed off-screen with `aria-hidden` and `tabIndex=-1`. If it is filled, the action returns `{ok: true}` and never calls Shopify.
-- **Rate limit:** 5 requests per minute per client IP (`oxygen-buyer-ip` / `cf-connecting-ip`). Counters are stored in the worker Cache API, keyed by a SHA-256 hash of the IP, with an in-memory fallback. Over the limit the action returns 429 with `Retry-After`.
-- **Email:** trimmed, lowercased and capped at 254 characters (`maxLength=254` on the input). Bodies over 4 KB are rejected with 413.
+- **Rate limit:** 5 requests per minute per client IP (`oxygen-buyer-ip` / `cf-connecting-ip`). Counters are stored in the worker Cache API, keyed by a SHA-256 hash of the IP, with an in-memory fallback capped at 5,000 keys. Over the limit the action returns 429 with `Retry-After`. On Oxygen the platform sets `oxygen-buyer-ip`; the other headers are client-controlled, so outside Oxygen the limit is best-effort.
+- **Email:** trimmed, lowercased and capped at 254 characters (`maxLength=254` on the input). Bodies over 4 KB, and bodies without a `Content-Length`, are rejected with 413.
+- **v3:** the form now lives in the footer's "Newsletter" column (as in the design) instead of a separate card above the footer. The action and its protections are unchanged.
 - **CSRF:** POSTs must have an `Origin` (or `Referer`) whose host is the request host or `PUBLIC_STORE_DOMAIN`. Otherwise the action returns 403.
 - The success response still doesn't reveal whether an email already exists (`TAKEN` is treated as success).
 
@@ -153,7 +168,8 @@ The cookie settings are `httpOnly: true`, `secure` (always in production and on 
 - `@shopify/hydrogen` was upgraded from 2026.4.5 to **2026.4.7**, the current stable patch. Its peer range still pins `react-router ~7.16`, so `overrides` force the patched version. Build, preview and runtime behaviour were tested with it.
 - `lodash` was raised to 4.18.1 and `esbuild` to 0.28.2 through overrides. `ws`, `qs` and `body-parser@1` were bumped too.
 - `npm audit --omit=dev` (also available as `npm run audit`) reports **found 0 vulnerabilities**.
-- **Residual, dev-only:** high/moderate advisories remain in local tooling that never ships to Oxygen: `undici`/`@fastify/busboy`/`miniflare` (from `@shopify/mini-oxygen`) and `braces`/`micromatch` (from `@graphql-codegen/cli`). The only fixes npm offers are major downgrades. Revisit when Shopify publishes updated CLI packages.
+- **v3:** the `undici`/`@fastify/busboy`/`miniflare` and `youch`/`cookie` advisories in local tooling are fixed with `overrides` (see the v3 table at the top).
+- **Residual, dev-only:** `braces` ≤ 3.0.3 (GHSA-vfj7-8cjw-p6xm, stack-exhaustion DoS from deeply nested glob patterns), reached through `micromatch` / `fast-glob` / `globby` from `@graphql-codegen/cli` and `graphql-config`. It accounts for all 10 remaining `npm audit` findings. No patched `braces` release exists (3.0.3 is the latest), so there is nothing to upgrade to. Exposure is nil in practice: it only runs at build time (`--codegen`) on the glob patterns in `.graphqlrc.js`, which live in the repo, and it is never bundled into the Oxygen worker. Revisit when `braces` publishes a fix.
 - The lockfile is committed. The repo has no CI, so there is nowhere to add `npm audit` yet. When CI is added, run `npm ci && npm run audit && npm run lint && npm run build`.
 
 ## 12. robots / caching ✅

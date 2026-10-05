@@ -6,6 +6,9 @@ import {isSameOriginRequest} from '~/lib/security';
 const EMAIL_MAX_LENGTH = 254;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Largest request body accepted (the form has two short fields). */
+const MAX_BODY_BYTES = 4096;
+
 /** Sign-ups allowed per client IP per minute. */
 const RATE_LIMIT = {limit: 5, windowSeconds: 60};
 
@@ -39,8 +42,14 @@ export async function action({request, context}) {
     );
   }
 
-  // The form has two short fields; refuse oversized bodies before parsing.
-  if (Number(request.headers.get('Content-Length') ?? 0) > 4096) {
+  // The form has two short fields; refuse oversized or unsized (chunked)
+  // bodies before parsing, so formData() never buffers an unbounded body.
+  const contentLength = Number(request.headers.get('Content-Length'));
+  if (
+    !Number.isInteger(contentLength) ||
+    contentLength <= 0 ||
+    contentLength > MAX_BODY_BYTES
+  ) {
     return data({ok: false, error: GENERIC_ERROR}, {status: 413});
   }
 

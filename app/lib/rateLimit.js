@@ -9,6 +9,16 @@
 const memory = new Map();
 
 /**
+ * Upper bound on fallback entries, so a flood of distinct keys (e.g. spoofed
+ * IP headers) can't grow the isolate's memory without limit.
+ */
+const MAX_MEMORY_ENTRIES = 5000;
+
+/**
+ * Client IP used as the rate-limit key. On Oxygen `oxygen-buyer-ip` is set by
+ * the platform and can't be forged; the other headers are only consulted
+ * when running elsewhere (local dev, other hosts) and are client-controlled
+ * there, so the limiter is best-effort outside Oxygen.
  * @param {Request} request
  */
 export function clientIp(request) {
@@ -58,6 +68,10 @@ function hitMemory(id, limit, windowSeconds) {
   const now = Date.now();
   for (const [key, entry] of memory) {
     if (entry.expires <= now) memory.delete(key);
+  }
+  if (!memory.has(id) && memory.size >= MAX_MEMORY_ENTRIES) {
+    // Evict the oldest entry (Map keeps insertion order).
+    memory.delete(memory.keys().next().value);
   }
   const entry = memory.get(id) ?? {count: 0, expires: now + windowSeconds * 1000};
   entry.count += 1;
