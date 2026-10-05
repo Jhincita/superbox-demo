@@ -1451,6 +1451,134 @@ select.input {
     var(--gutter) 0 / calc(100% - 2 * var(--gutter)) 1px no-repeat;
 }
 
+/* ——— Footer CTA — closing band (lime card + phrase ticker) ——— */
+.footer-cta {
+    padding-top: 56px;
+}
+.footer-cta-card {
+    background: var(--sbx-lime);
+    color: var(--sbx-lime-text);
+    border-radius: var(--r-xl);
+    padding: 44px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: center;
+}
+/* The global lime focus ring would vanish on the lime card. */
+.footer-cta-card :focus-visible {
+    outline-color: var(--sbx-olive);
+}
+.footer-cta-kicker {
+    display: inline-block;
+    background: var(--sbx-olive);
+    color: var(--sbx-lime);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 6px 12px;
+    border-radius: var(--r-xs);
+}
+.footer-cta-copy h2 {
+    margin: 16px 0 10px;
+    color: var(--on-light);
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+}
+.footer-cta-copy p {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.45;
+    max-width: 46ch;
+    text-wrap: pretty;
+}
+.footer-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+}
+/* `.footer a` recolors every footer link; keep the buttons' own colors. */
+.footer-cta .btn-buy,
+.footer-cta .btn-buy:hover {
+    color: var(--on-dark);
+}
+.footer-cta .footer-cta-ghost {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid var(--sbx-olive);
+    color: var(--sbx-olive);
+    font-weight: 800;
+    font-size: 15px;
+    padding: 12px 24px;
+    border-radius: var(--r-pill);
+    transition:
+            background 0.15s ease,
+            color 0.15s ease;
+}
+.footer-cta .footer-cta-ghost:hover {
+    background: var(--sbx-olive);
+    color: var(--sbx-lime);
+}
+.footer-cta-reasons {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+}
+.footer-cta-reasons li {
+    background: var(--sbx-olive);
+    border-radius: var(--r-md);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.footer-cta-reasons strong {
+    color: var(--sbx-lime);
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+.footer-cta-reasons span {
+    color: var(--sbx-olive-text);
+    font-size: 14px;
+}
+.footer-ticker {
+    margin-top: 40px;
+    overflow: hidden;
+    background: var(--sbx-orange);
+    color: var(--on-dark);
+    border-block: 1px solid var(--sbx-olive-line);
+}
+.footer-ticker-track {
+    display: flex;
+    width: max-content;
+    animation: footer-ticker 40s linear infinite;
+}
+.footer-ticker-track span {
+    padding: 14px 28px;
+    font-weight: 800;
+    font-size: 15px;
+    white-space: nowrap;
+}
+.footer-ticker-track span::after {
+    content: '●';
+    margin-left: 28px;
+    font-size: 8px;
+    vertical-align: middle;
+    color: var(--sbx-lime);
+}
+@keyframes footer-ticker {
+    to {
+        transform: translateX(-50%);
+    }
+}
+
 /* ——— Aside (cart drawer) ——— */
 html:has(.overlay.expanded) {
     overflow: hidden;
@@ -1923,6 +2051,11 @@ html:has(.overlay.expanded) {
 }
 
 @media (max-width: 860px) {
+    .footer-cta-card {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 32px;
+        gap: 28px;
+    }
     .header-main {
         flex-wrap: wrap;
         row-gap: 14px;
@@ -1977,6 +2110,17 @@ html:has(.overlay.expanded) {
 }
 
 @media (max-width: 600px) {
+    .footer-cta {
+        padding-top: 32px;
+    }
+    .footer-cta-card {
+        padding: 24px 20px;
+        border-radius: var(--r-lg);
+    }
+    .footer-cta-actions > * {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
     /* Topbar: one line that scrolls sideways instead of wrapping. */
     .topbar-inner {
         flex-wrap: nowrap;
@@ -2255,5 +2399,8 @@ html:has(.overlay.expanded) {
     .quick-add:active,
     .promo-tile:hover img {
         transform: none;
+    }
+    .footer-ticker-track {
+        animation: none;
     }
 }

@@ -2,7 +2,7 @@ import {Suspense, useEffect, useRef} from 'react';
 import {Await, Link, useFetcher} from 'react-router';
 import {Logo} from '~/components/Icon';
 import {getCategories} from '~/lib/categories';
-import {STORE} from '~/lib/storeConfig';
+import {FOOTER_CTA, STORE} from '~/lib/storeConfig';
 import {toRelativeUrl} from '~/lib/urls';
 
 /**
@@ -16,6 +16,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
   return (
     <>
       <footer className="footer">
+        <FooterCta />
         <div className="container footer-grid">
           <div className="footer-about">
             <Link className="footer-brand" prefetch="intent" to="/">
@@ -139,6 +140,58 @@ function Newsletter() {
           {message}
         </span>
       </fetcher.Form>
+    </section>
+  );
+}
+
+function FooterCta() {
+  const {kicker, title, text, primary, secondary, reasons, ticker} = FOOTER_CTA;
+  // Two identical halves, each with the phrases twice: the track slides by
+  // half its width, so the loop is seamless and still fills wide screens.
+  const loop = [0, 1, 2, 3].flatMap((copy) =>
+    ticker.map((phrase) => ({key: `${copy}-${phrase}`, phrase})),
+  );
+
+  return (
+    <section className="footer-cta" aria-labelledby="footer-cta-title">
+      <div className="container">
+        <div className="footer-cta-card">
+          <div className="footer-cta-copy">
+            <span className="footer-cta-kicker">{kicker}</span>
+            <h2 id="footer-cta-title">{title}</h2>
+            <p>{text}</p>
+            <div className="footer-cta-actions">
+              <Link className="btn-buy" prefetch="intent" to={primary.to}>
+                {primary.label}
+              </Link>
+              <a
+                className="footer-cta-ghost"
+                href={STORE.whatsappUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {secondary.label}
+              </a>
+            </div>
+          </div>
+          <ul className="footer-cta-reasons">
+            {reasons.map((r) => (
+              <li key={r.title}>
+                <strong>{r.title}</strong>
+                <span>{r.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {/* Decorative: repeats brand phrases, so screen readers skip it. */}
+      <div className="footer-ticker" aria-hidden="true">
+        <div className="footer-ticker-track">
+          {loop.map(({key, phrase}) => (
+            <span key={key}>{phrase}</span>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
