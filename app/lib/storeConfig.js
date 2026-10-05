@@ -5,7 +5,7 @@
  * menu data still come from the Storefront API.
  */
 export const STORE = {
-  name: 'superbox',
+  name: 'Superbox',
   whatsappNumber: '+56 9 9845 0496',
   whatsappUrl: 'https://wa.me/56998450496',
   supportUrl: 'https://soporte.doblei.cl/',

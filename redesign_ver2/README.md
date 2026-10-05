@@ -140,7 +140,7 @@ The current `ValueProps` band is replaced by the topbar copy. Remove it from the
 ### 5.8 Newsletter + Footer (`Footer.jsx`)
 - Keep the newsletter (restyled: white card, lime submit button). It sits above the footer.
 - Footer: olive `#2B3510`, text `#C9D3A8` 14px, padding 40, grid `2fr 1fr 1fr 1fr`, gap 32.
-  - Column 1: logo (default palette, stroke `#2B3510`) + "superbox" 22/900 white, then `STORE.about`.
+  - Column 1: logo (default palette, stroke `#2B3510`) + "Superbox" 22/900 white, then `STORE.about`.
   - Columns: Catálogo / Ayuda / Newsletter. Headings are white 14/700, links hover lime.
 - Bottom row: "© {year} Superbox · Santiago, Chile" and "Precios en CLP, impuesto incluido".
 

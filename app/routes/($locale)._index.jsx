@@ -183,9 +183,16 @@ export default function Homepage() {
           <MockShopNotice />
         </div>
       )}
-      <section className="container hero" aria-label="Destacados">
-        <Hero hero={data.hero} />
-        <PromoStack tiles={data.promoTiles} />
+      {/* Section 1 wraps two rows: A (the hero) full width on top, then B,
+          the promo grid with b.1 Lectores and b.2 Impresoras side by side.
+          The layout lives in .home-feature / .promo-grid (app.css). */}
+      <section className="container home-feature" aria-label="Destacados">
+        <div className="home-feature-a">
+          <Hero hero={data.hero} />
+        </div>
+        <div className="home-feature-b">
+          <PromoGrid tiles={data.promoTiles} />
+        </div>
       </section>
       {categories.length > 0 && <CategoryGrid categories={categories} />}
       <FeaturedProducts products={data.featuredProducts} />
@@ -318,11 +325,14 @@ function keepHyphenatedWords(text) {
 }
 
 /**
+ * Row B: the promo tiles as a grid under the hero — b.1 (Lectores) and b.2
+ * (Impresoras) side by side in equal columns; they stack on phones (see
+ * .promo-grid in app.css).
  * @param {{tiles: Array<ReturnType<typeof toPromoTile>>}}
  */
-function PromoStack({tiles}) {
+function PromoGrid({tiles}) {
   return (
-    <div className="promo-stack">
+    <div className="promo-grid">
       {tiles.map((tile) => (
         <Link
           className={`promo-tile ${tile.tone}`}
@@ -335,7 +345,7 @@ function PromoStack({tiles}) {
               alt=""
               data={tile.image}
               loading="eager"
-              sizes="(min-width: 1081px) 400px, (min-width: 601px) 50vw, 100vw"
+              sizes="(min-width: 1281px) 640px, (min-width: 601px) 50vw, 100vw"
             />
           ) : tile.fallbackImage ? (
             <img
@@ -432,99 +442,98 @@ function ProductGridSkeleton({count}) {
 }
 
 const HERO_QUERY = `#graphql
-  fragment HeroProduct on Product {
+fragment HeroProduct on Product {
+  id
+  title
+  handle
+  featuredImage {
     id
-    title
-    handle
-    featuredImage {
-      id
-      url
-      altText
-      width
-      height
-    }
-    priceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
-    }
-    compareAtPriceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
-    }
-    tagline: metafield(namespace: "custom", key: "tagline") {
-      value
-    }
-    heroSpecs: metafield(namespace: "custom", key: "hero_specs") {
-      value
+    url
+    altText
+    width
+    height
+  }
+  priceRange {
+    minVariantPrice {
+      amount
+      currencyCode
     }
   }
-  fragment PromoCollection on Collection {
-    id
-    handle
-    image {
-      id
-      url
-      altText
-      width
-      height
+  compareAtPriceRange {
+    minVariantPrice {
+      amount
+      currencyCode
     }
-    products(first: 1, sortKey: PRICE) {
-      nodes {
-        id
-        priceRange {
-          minVariantPrice {
-            amount
-            currencyCode
-          }
+  }
+  tagline: metafield(namespace: "custom", key: "tagline") {
+    value
+  }
+  heroSpecs: metafield(namespace: "custom", key: "hero_specs") {
+    value
+  }
+}
+fragment PromoCollection on Collection {
+  id
+  handle
+  image {
+    id
+    url
+    altText
+    width
+    height
+  }
+  products(first: 1, sortKey: PRICE) {
+    nodes {
+      id
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
         }
       }
     }
   }
-  query HeroProduct(
-    $handle: String!
-    $tileAHandle: String!
-    $tileBHandle: String!
-    $country: CountryCode
-    $language: LanguageCode
-  ) @inContext(country: $country, language: $language) {
-    heroProduct: product(handle: $handle) {
+}
+query HeroProduct(
+  $handle: String!
+  $tileAHandle: String!
+  $tileBHandle: String!
+  $country: CountryCode
+  $language: LanguageCode
+) @inContext(country: $country, language: $language) {
+  heroProduct: product(handle: $handle) {
+    ...HeroProduct
+  }
+  products(first: 1, sortKey: BEST_SELLING) {
+    nodes {
       ...HeroProduct
     }
-    products(first: 1, sortKey: BEST_SELLING) {
-      nodes {
-        ...HeroProduct
-      }
-    }
-    tileA: collection(handle: $tileAHandle) {
-      ...PromoCollection
-    }
-    tileB: collection(handle: $tileBHandle) {
-      ...PromoCollection
-    }
   }
+  tileA: collection(handle: $tileAHandle) {
+    ...PromoCollection
+  }
+  tileB: collection(handle: $tileBHandle) {
+    ...PromoCollection
+  }
+}
 `;
 
 const FEATURED_PRODUCTS_QUERY = `#graphql
-  query FeaturedProducts(
-    $first: Int!
-    $country: CountryCode
-    $language: LanguageCode
-  ) @inContext(country: $country, language: $language) {
-    products(first: $first, sortKey: BEST_SELLING) {
-      nodes {
-        ...ProductCard
-      }
+query FeaturedProducts(
+  $first: Int!
+  $country: CountryCode
+  $language: LanguageCode
+) @inContext(country: $country, language: $language) {
+  products(first: $first, sortKey: BEST_SELLING) {
+    nodes {
+      ...ProductCard
     }
   }
-  ${PRODUCT_CARD_FRAGMENT}
+}
+${PRODUCT_CARD_FRAGMENT}
 `;
 
 /** @typedef {import('./+types/($locale)._index').Route} Route */
 /** @typedef {import('storefrontapi.generated').HeroProductFragment} HeroProductFragment */
 /** @typedef {import('storefrontapi.generated').PromoCollectionFragment} PromoCollectionFragment */
 /** @typedef {import('storefrontapi.generated').FeaturedProductsQuery} FeaturedProductsQuery */
-/** @typedef {ReturnType<typeof useLoaderData<typeof loader>>} LoaderReturnData */
