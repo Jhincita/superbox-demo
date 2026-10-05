@@ -7,9 +7,12 @@ import {categoryCode, getCategories} from '~/lib/categories';
 import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
 import {discountPercent, formatMoney} from '~/lib/format';
 import {HERO, PROMO_TILES} from '~/lib/storeConfig';
-import heroFallbackImage from '~/assets/images/hero-barpos-d1a.png';
-import promoLectoresImage from '~/assets/images/promo-lectores.jpg';
-import promoImpresorasImage from '~/assets/images/promo-impresoras.jpg';
+// import heroFallbackImage from '~/assets/images/hero-barpos-d1a.png';
+import promoLectoresImage from '~/assets/images/promo-lectorees.jpg';
+import promoImpresorasImage from '~/assets/images/promo-impresoraas.jpg';
+import promoInsumosImage from '~/assets/images/promo-insumos.jpg';
+import heroFallbackImage from '~/assets/images/barposn200.jpg';
+
 
 /** Products shown in "Lo más vendido". */
 const FEATURED_COUNT = 4;
@@ -18,6 +21,7 @@ const FEATURED_COUNT = 4;
 const PROMO_FALLBACK_IMAGES = {
   lectores: promoLectoresImage,
   impresoras: promoImpresorasImage,
+  insumos: promoInsumosImage,
 };
 
 /**
@@ -60,11 +64,12 @@ async function loadCriticalData({context}) {
         handle: HERO.productHandle,
         tileAHandle: PROMO_TILES[0].collectionHandle,
         tileBHandle: PROMO_TILES[1].collectionHandle,
+        tileCHandle: PROMO_TILES[2].collectionHandle,
       },
     },
   );
 
-  const product = heroProduct ?? products.nodes[0] ?? null;
+  const product = heroProduct ?? null;
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
@@ -204,37 +209,21 @@ export default function Homepage() {
  * @param {{hero: ReturnType<typeof toHeroData> | null}}
  */
 function Hero({hero}) {
-  if (!hero) {
-    return (
-      <div className="hero-card">
-        <div className="hero-copy">
-          <h1 className="hero-title">{HERO.title}</h1>
-          <p className="hero-text">{HERO.text}</p>
-          <div className="hero-buy">
-            <Link className="btn-buy" prefetch="intent" to="/collections/all">
-              Ver catálogo
-            </Link>
-          </div>
-        </div>
-        <div className="hero-media">
-          <img alt="" height={340} src={heroFallbackImage} width={340} />
-        </div>
-      </div>
-    );
-  }
-
-  const to = `/products/${hero.handle}`;
+  const title = hero?.title ?? HERO.title;
+  const text = hero?.text ?? HERO.text;
+  const specs = hero?.specs ?? HERO.specs.slice(0, 3);
+  const to = hero ? `/products/${hero.handle}` : '/collections/all';
 
   return (
     <div className="hero-card">
       <div className="hero-copy">
         <span className="hero-tag">Producto destacado</span>
         <h1 className="hero-title">
-          <HeroTitle title={hero.title} />
+          <HeroTitle title={title} />
         </h1>
-        <p className="hero-text">{hero.text}</p>
+        <p className="hero-text">{text}</p>
         <ul className="hero-chips" aria-label="Especificaciones">
-          {hero.specs.map((spec) => (
+          {specs.map((spec) => (
             <li className="hero-chip" key={spec}>
               {spec}
             </li>
@@ -242,9 +231,9 @@ function Hero({hero}) {
         </ul>
         <div className="hero-buy">
           <Link className="btn-buy" prefetch="intent" to={to}>
-            Comprar ahora
+            {hero ? 'Comprar ahora' : 'Ver catálogo'}
           </Link>
-          {hero.price && (
+          {hero?.price && (
             <div className="hero-prices">
               {hero.compareAtPrice && (
                 <s className="hero-price-old">
@@ -261,18 +250,14 @@ function Hero({hero}) {
         </div>
       </div>
       <Link className="hero-media" prefetch="intent" tabIndex={-1} to={to}>
-        {hero.image ? (
-          <Image
-            alt={hero.image.altText || hero.title}
-            aspectRatio="1/1"
-            data={hero.image}
-            loading="eager"
-            sizes="340px"
-          />
-        ) : (
-          <img alt="" height={340} src={heroFallbackImage} width={340} />
-        )}
-        {hero.discount && (
+        <img
+          alt={title}
+          height={340}
+          loading="eager"
+          src={heroFallbackImage}
+          width={340}
+        />
+        {hero?.discount && (
           <span className="hero-save">
             <small>AHORRA</small>
             <strong>{hero.discount}%</strong>
@@ -282,7 +267,6 @@ function Hero({hero}) {
     </div>
   );
 }
-
 /**
  * @param {{title: string}}
  */
@@ -510,6 +494,9 @@ query HeroProduct(
     }
   }
   tileA: collection(handle: $tileAHandle) {
+    ...PromoCollection
+  }
+  tileB: collection(handle: $tileBHandle) {
     ...PromoCollection
   }
   tileB: collection(handle: $tileBHandle) {

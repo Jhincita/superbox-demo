@@ -779,7 +779,7 @@ select.input {
     transition: transform 0.25s ease;
 }
 .promo-tile.orange img {
-    opacity: 0.45;
+    opacity: 0.80;
     mix-blend-mode: multiply;
 }
 .promo-tile:hover img {

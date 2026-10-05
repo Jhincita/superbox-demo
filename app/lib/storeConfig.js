@@ -26,19 +26,20 @@ export const HIDDEN_COLLECTION_HANDLES = ['frontpage', 'all'];
 
 export const HERO = {
   /** Shown when there is no hero product (title + "Ver catálogo" CTA). */
-  title: 'Todo el equipo para tu negocio',
+  title: 'Barpos N200S 2',
   /** One sentence. Used when the product has no `custom.tagline` metafield. */
-  text: 'Caja completa en un solo equipo: pantalla táctil de 15", sin ventilador y lista para vender desde el primer día.',
+  text: 'Agiliza tus ventas y ofrece una mejor experiencia a tus clientes: Intel N97 sin ventilador, 8 GB de RAM y lista para vender desde el primer día.',
   /** Exactly 3 chips. Used when the product has no `custom.hero_specs` metafield. */
-  specs: ['Intel J6412', '128 GB SSD', 'Fanless'],
+  specs: ['Intel N97 Fanless', '8 GB DDR4', '128 GB SSD'],
   /**
    * Optional line break in the product title: text before this marker goes
    * on the first line (e.g. 'BarPOS' → "BarPOS<br>All-in-One E200").
+   * Must match the start of the Shopify product title exactly.
    * @type {string | null}
    */
   titleBreakAfter: null,
   /** Product highlighted in the hero card. Falls back to the first best seller. */
-  productHandle: 'all-in-one-con-impresora-integrada-barpos-d1a',
+  productHandle: 'pos-all-in-one-barpos-n200s-2', // ← confirm the real handle in Shopify
 };
 
 /** Topbar copy (replaces the old value-props band on the homepage). */
@@ -95,6 +96,16 @@ export const PROMO_TILES = [
     fallbackKicker: '3 CUOTAS SIN INTERÉS',
     fallbackImage: 'impresoras',
     tone: 'orange',
+  },
+  // NEW
+  {
+    collectionHandle: 'insumos', // ← confirm the real handle in Shopify
+    title: 'Insumos',
+    kicker: null,
+    fromPrice: true,
+    fallbackKicker: 'ROLLOS, ETIQUETAS Y MÁS',
+    fallbackImage: 'insumos',
+    tone: 'olive',
   },
 ];
 
