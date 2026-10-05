@@ -127,3 +127,30 @@ export const DESIGN = {
   grayscalePhotos: false,
   compactGrid: false,
 };
+
+/**
+ * Franja de cierre arriba del footer (lenguaje de marca 2026).
+ * `reasons`: 3 razones para comprar, cada una con título corto y bajada.
+ * `ticker`: frases de la cinta inferior; se repiten en loop.
+ */
+export const FOOTER_CTA = {
+  kicker: 'ABRE LA CAJA. EMPIEZA A VENDER.',
+  title: 'Cada venta, registrada. Cada peso, cuidado.',
+  text: 'Equipos para vender, al precio de quien los importa. Te ayudamos a elegir el tuyo.',
+  primary: {label: 'Ver catálogo', to: '/collections/all'},
+  secondary: {label: 'Cotizar por WhatsApp'},
+  reasons: [
+    {title: 'Lo importamos.', text: 'Precio directo, sin intermediarios.'},
+    {
+      title: 'Lo vendemos.',
+      text: 'Despacho a todo Chile y factura para empresas.',
+    },
+    {title: 'Lo reparamos.', text: 'Soporte técnico en Chile incluido.'},
+  ],
+  ticker: [
+    'superbox.cl',
+    'Abre la caja. Empieza a vender.',
+    'Importado, vendido y reparado en Chile',
+    'Vende más con la caja que ya tienes.',
+  ],
+};
